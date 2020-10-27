@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ApimServiceName": {
+            "type": "string"
+        }
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('ApimServiceName'), '/api-geo-subscription-dev')]",
+            "type": "Microsoft.ApiManagement/service/subscriptions",
+            "apiVersion": "2019-01-01",
+            "properties": {
+                "scope": "/products/api-geo-product-dev",
+                "primaryKey": "31867991-3a15-4538-bc03-6c2fcf86b683",
+                "displayName": "api-geo-subscription",
+                "state": "active",
+                "allowTracing": true
+            },
+            "dependsOn": []
+        }
+    ]
+}

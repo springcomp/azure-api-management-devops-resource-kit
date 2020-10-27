@@ -1,0 +1,83 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "ApimServiceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the API Management"
+      }
+    },
+    "LinkedTemplatesBaseUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Base URL of the repository"
+      }
+    },
+    "LinkedTemplatesUrlQueryString": {
+      "type": "string",
+      "metadata": {
+        "description": "Query string for the URL of the repository"
+      }
+    }
+  },
+  "resources": [
+    {
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('LinkedTemplatesBaseUrl'), '/apim-gouvernance-products.template.json', parameters('LinkedTemplatesUrlQueryString'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "ApimServiceName": {
+            "value": "[parameters('ApimServiceName')]"
+          }
+        }
+      },
+      "name": "productsTemplate",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2018-05-01",
+      "dependsOn": []
+    },
+    {
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('LinkedTemplatesBaseUrl'), '/apim-gouvernance-subscriptions.template.json', parameters('LinkedTemplatesUrlQueryString'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "ApimServiceName": {
+            "value": "[parameters('ApimServiceName')]"
+          }
+        }
+      },
+      "name": "subscriptionsTemplate",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2018-05-01",
+      "dependsOn": []
+    },
+    {
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('LinkedTemplatesBaseUrl'), '/dev-api-geo.api.template.json', parameters('LinkedTemplatesUrlQueryString'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "ApimServiceName": {
+            "value": "[parameters('ApimServiceName')]"
+          }
+        }
+      },
+      "name": "dev-api-geo-APITemplate",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2018-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'productsTemplate')]",
+        "[resourceId('Microsoft.Resources/deployments', 'subscriptionsTemplate')]"
+      ]
+    }
+  ]
+}

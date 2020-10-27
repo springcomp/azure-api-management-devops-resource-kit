@@ -15,12 +15,13 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
             CreatorConfig creatorConfig = new CreatorConfig() { subscriptions = new List<SubscriptionConfig>() };
             SubscriptionConfig subscription = new SubscriptionConfig()
             {
-                ownerId = "ownerId",
-                scope = "scope",
+                name = "subscriptionName",
+                ownerId = "user/ownerId",
+                scope = "products/productId",
                 displayName = "displayName",
                 primaryKey = "primaryKey",
                 secondaryKey = "secondaryKey",
-                state = "state",
+                state = "active",
                 allowTracing = true,
             };
             creatorConfig.subscriptions.Add(subscription);
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
             SubscriptionsTemplateResource subscriptionsTemplateResource = (SubscriptionsTemplateResource)subscriptionTemplate.resources[0];
 
             // assert
-            Assert.Equal($"[concat(parameters('ApimServiceName'), '/{subscription.displayName}')]", subscriptionsTemplateResource.name);
+            Assert.Equal($"[concat(parameters('ApimServiceName'), '/{subscription.name}')]", subscriptionsTemplateResource.name);
             Assert.Equal(subscription.scope, subscriptionsTemplateResource.properties.scope);
             Assert.Equal(subscription.displayName, subscriptionsTemplateResource.properties.displayName);
             Assert.Equal(subscription.primaryKey, subscriptionsTemplateResource.properties.primaryKey);

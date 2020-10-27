@@ -1,0 +1,35 @@
+---
+# Source: apim-gouvernance/templates/index.yaml
+version: 0.0.1
+apimServiceName: apim-lplcloud-dev
+apiVersionSets:
+apis:
+    -       
+      description: "dev api-geo"
+      displayName: "dev api-geo"
+      name: "dev-api-geo" 
+      openApiSpec: "https://api.gouv.fr/api/v1/proxy/https%3A%2F%2Fgeo.api.gouv.fr%2Fdefinition.yml"
+      serviceUrl: "https://geo.api.gouv.fr"
+      suffix: "/dev/api-geo"
+      subscriptionRequired: true
+      products: api-geo-product-dev
+namedValues:
+products:
+      - displayname: api-geo-product
+        name: api-geo-product-dev
+        policy: ./ApiManagement/Apis/api-geo/policy.dev.xml
+        state: Published
+        subscriptionRequired: true
+        subscriptions:
+          - name: api-geo-subscription-dev
+            displayName: api-geo-subscription-dev
+            primaryKey: 31867991-3a15-4538-bc03-6c2fcf86b683
+            state: active
+            allowTracing: true
+tags:
+backends:
+linked: true
+linkedTemplatesBaseUrl : https://linked-url
+linkedTemplatesUrlQueryString: queryString
+outputLocation: ./dist
+baseFileName: apim-gouvernance

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "ApimServiceName": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "properties": {
+        "subscriptionRequired": true,
+        "state": "Published",
+        "displayName": "api-geo-product"
+      },
+      "name": "[concat(parameters('ApimServiceName'), '/api-geo-product-dev')]",
+      "type": "Microsoft.ApiManagement/service/products",
+      "apiVersion": "2019-01-01",
+      "dependsOn": []
+    },
+    {
+      "properties": {
+        "value": "<policies>\r\n    <inbound>\r\n        <base />\r\n        <!--<validate-jwt header-name=\"Authorization\" failed-validation-httpcode=\"401\" failed-validation-error-message=\"Unauthorized. Access token is missing or invalid.\">\r\n\t\t\t CLASP/ADFS\r\n            <openid-config url=\"https://cid.clasp-infra.com/adfs/.well-known/openid-configuration\" />\r\n            <audiences>\r\n                <audience></audience> \r\n            </audiences>\r\n\t\t\t<issuers>\r\n\t\t\t\tCLASP/ADFS\r\n                <issuer>http://cid.clasp-infra.com/adfs/services/trust</issuer>             \r\n\t\t\t</issuers>\r\n\t\t\t<required-claims>\r\n\t\t\t\t <claim name=\"appid\" match=\"any\">\r\n                    <value></value>\r\n                </claim>\r\n\t\t\t</required-claims>\r\n\t\t</validate-jwt>-->\r\n    </inbound>\r\n    <backend>\r\n        <base />\r\n    </backend>\r\n    <outbound>\r\n        <base />\r\n    </outbound>\r\n    <on-error>\r\n        <base />\r\n    </on-error>\r\n</policies>",
+        "format": "rawxml"
+      },
+      "name": "[concat(parameters('ApimServiceName'), '/api-geo-product-dev/policy')]",
+      "type": "Microsoft.ApiManagement/service/products/policies",
+      "apiVersion": "2019-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/products', parameters('ApimServiceName'), 'api-geo-product-dev')]"
+      ]
+    }
+  ]
+}
