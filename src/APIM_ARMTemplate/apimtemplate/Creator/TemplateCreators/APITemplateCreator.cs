@@ -181,47 +181,37 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 bool isJSON = this.fileReader.isJSON(fileContents);
                 bool isUrl = Uri.TryCreate(api.openApiSpec, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
 
-                value = isUrl
-                    ? api.openApiSpec
-                    : fileContents
-                    ;
-
-                bool isVersionThree = false;
-                if (isJSON == true)
+                if (isUrl == true)
                 {
-                    // open api spec is remote json file, use swagger-link-json for v2 and openapi-link for v3
-                    OpenAPISpecReader openAPISpecReader = new OpenAPISpecReader();
-                    isVersionThree = await openAPISpecReader.isJSONOpenAPISpecVersionThreeAsync(api.openApiSpec);
-                }
-
-                format = isUrl
-                    ? (isJSON ? (isVersionThree ? "openapi-link" : "swagger-link-json") : "openapi-link")
-                    : (isJSON ? (isVersionThree ? "openapi+json" : "swagger-json") : "openapi")
-                    ;
-
-                // if the title needs to be modified
-                // we need to embed the OpenAPI definition
-
-                if (!string.IsNullOrEmpty(api.displayName))
-                {
-                    format = (isJSON ? (isVersionThree ? "openapi+json" : "swagger-json") : "openapi");
-
-                    // download definition
-
-                    if (isUrl)
+                    value = api.openApiSpec;
+                    if (isJSON == true)
                     {
-                        using (var client = new WebClient())
-                            value = client.DownloadString(value);
+                        // open api spec is remote json file, use swagger-link-json for v2 and openapi-link for v3
+                        OpenAPISpecReader openAPISpecReader = new OpenAPISpecReader();
+                        bool isVersionThree = await openAPISpecReader.isJSONOpenAPISpecVersionThreeAsync(api.openApiSpec);
+                        format = isVersionThree == false ? "swagger-link-json" : "openapi-link";
                     }
-
-                    // update title
-
-                    value = new OpenApi(value, format)
-                        .SetTitle(api.displayName)
-                        .GetDefinition()
-                        ;
+                    else
+                    {
+                        // open api spec is remote yaml file
+                        format = "openapi-link";
+                    }
+                } else
+                {
+                    value = fileContents;
+                    if (isJSON == true)
+                    {
+                        // open api spec is local json file, use swagger-json for v2 and openapi+json for v3
+                        OpenAPISpecReader openAPISpecReader = new OpenAPISpecReader();
+                        bool isVersionThree = await openAPISpecReader.isJSONOpenAPISpecVersionThreeAsync(api.openApiSpec);
+                        format = isVersionThree == false ? "swagger-json" : "openapi+json";
+                    } else
+                    {
+                        // open api spec is local yaml file
+                        format = "openapi";
+                    }
                 }
-                // set the version set id
+				// set the version set id
                 if (api.apiVersionSetId != null)
                 {
                     // point to the supplied version set if the apiVersionSetId is provided
