@@ -103,6 +103,9 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     List<Template> apiTemplates = new List<Template>();
                     Console.WriteLine("Creating API templates");
                     Console.WriteLine("------------------------------------------");
+
+                    IDictionary<string, string[]> apiVersions = APITemplateCreator.GetApiVersionSets(creatorConfig);
+
                     foreach (APIConfig api in creatorConfig.apis)
                     {
                         // create api templates from provided api config - if the api config contains a supplied apiVersion, split the templates into 2 for metadata and swagger content, otherwise create a unified template
@@ -115,6 +118,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                             isSplit = apiTemplateCreator.isSplitAPI(api),
                             dependsOnGlobalServicePolicies = creatorConfig.policy != null,
                             dependsOnVersionSets = api.apiVersionSetId != null,
+                            dependsOnVersion = masterTemplateCreator.GetDependsOnPreviousApiVersion(api, apiVersions),
                             dependsOnProducts = api.products != null,
                             dependsOnTags = api.tags != null,
                             dependsOnLoggers = await masterTemplateCreator.DetermineIfAPIDependsOnLoggerAsync(api, fileReader),
@@ -173,7 +177,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     {
                         fileWriter.WriteJSONToFile(authorizationServersTemplate, String.Concat(creatorConfig.outputLocation, fileNames.authorizationServers));
                     }
-                    if (tagTemplate != null) {
+                    if (tagTemplate != null)
+                    {
                         fileWriter.WriteJSONToFile(tagTemplate, String.Concat(creatorConfig.outputLocation, fileNames.tags));
                     }
 
