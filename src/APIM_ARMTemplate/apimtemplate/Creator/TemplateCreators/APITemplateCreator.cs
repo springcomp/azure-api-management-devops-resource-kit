@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             PolicyTemplateResource apiPolicyResource = api.policy != null ? this.policyTemplateCreator.CreateAPIPolicyTemplateResource(api, dependsOn) : null;
             List<PolicyTemplateResource> operationPolicyResources = api.operations != null ? this.policyTemplateCreator.CreateOperationPolicyTemplateResources(api, dependsOn) : null;
             List<ProductAPITemplateResource> productAPIResources = api.products != null ? this.productAPITemplateCreator.CreateProductAPITemplateResources(api, dependsOn) : null;
-            List<TagAPITemplateResource> tagAPIResources = api.tags != null ? this.tagAPITemplateCreator.CreateTagAPITemplateResources(api,dependsOn) : null;
+            List<TagAPITemplateResource> tagAPIResources = api.tags != null ? this.tagAPITemplateCreator.CreateTagAPITemplateResources(api, dependsOn) : null;
             DiagnosticTemplateResource diagnosticTemplateResource = api.diagnostic != null ? this.diagnosticTemplateCreator.CreateAPIDiagnosticTemplateResource(api, dependsOn) : null;
             // add release resource if the name has been appended with ;rev{revisionNumber}
             ReleaseTemplateResource releaseTemplateResource = api.name.Contains(";rev") == true ? this.releaseTemplateCreator.CreateAPIReleaseTemplateResource(api, dependsOn) : null;
@@ -239,7 +239,20 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 }
                 apiTemplateResource.properties.format = format;
                 apiTemplateResource.properties.value = value;
-                apiTemplateResource.properties.path = api.suffix;
+
+                // #562: deploying multiple versions of an API may fail because while trying to deploy the initial template
+                // overwrite the initial template’s path property to a dummy value
+                // this value will be restored when the subsequent template is deployed
+
+                if (isSplit && isInitial)
+                {
+                    apiTemplateResource.properties.path = api.suffix + $"/{Guid.NewGuid():n}";
+                }
+                else
+                {
+                    apiTemplateResource.properties.path = api.suffix;
+                }
+
                 apiTemplateResource.properties.serviceUrl = MakeServiceUrl(api);
 
             }
