@@ -7,7 +7,16 @@
     <LangVersion>preview</LangVersion>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>apim-templates</ToolCommandName>
-    <Version>1.0.0</Version>
+    <Version>1.0.5-zeta-6</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>apim-templates</PackageId>
+    <Authors>Springcomp</Authors>
+    <Product>Azure API Management</Product>
+    <PackageProjectUrl>https://github.com/springcomp/azure-api-management-devops-resource-kit/tree/1.0.6-zeta-6</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/springcomp/azure-api-management-devops-resource-kit</RepositoryUrl>
+    <RepositoryType>GitHub</RepositoryType>
+    <PackageTags>apim</PackageTags>
+    <Description />
   </PropertyGroup>
 
   <ItemGroup>
