@@ -215,8 +215,15 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
                     if (isUrl)
                     {
-                        using (var client = new WebClient())
-                            value = client.DownloadString(value);
+                        try {
+                            using (var client = new WebClient())
+                                value = client.DownloadString(value);
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine($"Unable to download contract definition for {api.displayName} at the following location: '{api.openApiSpec}'.");
+                            throw;
+                        }
                     }
 
                     // update title

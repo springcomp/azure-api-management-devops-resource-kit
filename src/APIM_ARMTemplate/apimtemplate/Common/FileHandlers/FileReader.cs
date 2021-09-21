@@ -89,15 +89,21 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
             {
                 // make a request to the provided url and convert the response's content
                 HttpClient client = new HttpClient();
-                HttpResponseMessage response = await client.GetAsync(uriResult);
-                if (response.IsSuccessStatusCode)
-                {
-                    string content = await response.Content.ReadAsStringAsync();
-                    return content;
+                try {
+                    HttpResponseMessage response = await client.GetAsync(uriResult);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string content = await response.Content.ReadAsStringAsync();
+                        return content;
+                    }
+                    else
+                    {
+                        throw new Exception($"Unable to fetch remote file - {fileLocation}");
+                    }
                 }
-                else
+                catch (HttpRequestException e)
                 {
-                    throw new Exception($"Unable to fetch remote file - {fileLocation}");
+                    throw new Exception($"Unable to fetch remote file - {fileLocation}.\r\nReason: {e.Message}");
                 }
             }
             else
