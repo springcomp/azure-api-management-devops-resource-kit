@@ -367,6 +367,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         public bool dependsOnAuthorizationServers { get; set; }
         public bool dependsOnTags { get; set; }
         public string dependsOnVersion { get; set; }
+        public bool isRevisionOnly { get; set; }
     }
 
 }

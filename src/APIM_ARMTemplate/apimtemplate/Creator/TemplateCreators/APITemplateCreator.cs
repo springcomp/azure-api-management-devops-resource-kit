@@ -17,8 +17,9 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         private TagAPITemplateCreator tagAPITemplateCreator;
         private DiagnosticTemplateCreator diagnosticTemplateCreator;
         private ReleaseTemplateCreator releaseTemplateCreator;
+        private readonly CreatorConfig creatorConfig;
 
-        public APITemplateCreator(FileReader fileReader, PolicyTemplateCreator policyTemplateCreator, ProductAPITemplateCreator productAPITemplateCreator, TagAPITemplateCreator tagAPITemplateCreator, DiagnosticTemplateCreator diagnosticTemplateCreator, ReleaseTemplateCreator releaseTemplateCreator)
+        public APITemplateCreator(FileReader fileReader, PolicyTemplateCreator policyTemplateCreator, ProductAPITemplateCreator productAPITemplateCreator, TagAPITemplateCreator tagAPITemplateCreator, DiagnosticTemplateCreator diagnosticTemplateCreator, ReleaseTemplateCreator releaseTemplateCreator, CreatorConfig creatorConfig)
         {
             this.fileReader = fileReader;
             this.policyTemplateCreator = policyTemplateCreator;
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             this.tagAPITemplateCreator = tagAPITemplateCreator;
             this.diagnosticTemplateCreator = diagnosticTemplateCreator;
             this.releaseTemplateCreator = releaseTemplateCreator;
+            this.creatorConfig = creatorConfig;
         }
 
         private static string GetRevisionApiName(APIConfig api)
@@ -54,7 +56,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             if (isSplit == true)
             {
                 // create 2 templates, an initial template with metadata and a subsequent template with the swagger content
-                apiTemplates.Add(await CreateAPITemplateAsync(api, isSplit, true));
+                if(!IsRevisionOnlyAPI(api, this.creatorConfig))
+                    apiTemplates.Add(await CreateAPITemplateAsync(api, isSplit, true));
                 apiTemplates.Add(await CreateAPITemplateAsync(api, isSplit, false));
             }
             else
@@ -360,6 +363,11 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             return protocols;
         }
 
+        public static bool IsRevisionOnlyAPI(APIConfig apiConfig, CreatorConfig creatorConfig)
+        {
+            // check if the only api present is a revision without the base api
+            return apiConfig.apiRevision != null && creatorConfig.apis.Count(a => a.name == apiConfig.name) == 1;
+        }
         public bool isSplitAPI(APIConfig apiConfig)
         {
             // the api needs to be split into multiple templates if the user has supplied a version or version set - deploying swagger related properties at the same time as api version related properties fails, so they must be written and deployed separately
