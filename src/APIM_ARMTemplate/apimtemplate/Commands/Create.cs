@@ -142,14 +142,39 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                         Template masterTemplate = masterTemplateCreator.CreateLinkedMasterTemplate(creatorConfig, globalServicePolicyTemplate, apiVersionSetsTemplate, productsTemplate, propertyTemplate, loggersTemplate, backendsTemplate, authorizationServersTemplate, tagTemplate, apiInformation, fileNames, creatorConfig.apimServiceName, fileNameGenerator);
                         fileWriter.WriteJSONToFile(masterTemplate, String.Concat(creatorConfig.outputLocation, fileNames.linkedMaster));
                     }
+
+                    //
+                    var templateToWrite = new Dictionary<string, Template>();
                     foreach (Template apiTemplate in apiTemplates)
                     {
                         APITemplateResource apiResource = apiTemplate.resources.FirstOrDefault(resource => resource.type == ResourceTypeConstants.API) as APITemplateResource;
                         APIConfig providedAPIConfiguration = creatorConfig.apis.FirstOrDefault(api => string.Compare(apiResource.name, APITemplateCreator.MakeResourceName(api), true) == 0);
                         // if the api version is not null the api is split into multiple templates. If the template is split and the content value has been set, then the template is for a subsequent api
                         string apiFileName = fileNameGenerator.GenerateCreatorAPIFileName(providedAPIConfiguration.name, apiTemplateCreator.isSplitAPI(providedAPIConfiguration), apiResource.properties.value != null);
-                        fileWriter.WriteJSONToFile(apiTemplate, String.Concat(creatorConfig.outputLocation, apiFileName));
+
+                        if (templateToWrite.ContainsKey(apiFileName) )
+                        {
+                            if (apiResource.properties.value != null)/*isInitial*/
+                                continue;
+                            else
+                            {
+                                //Add resource
+                                var newResource = templateToWrite[apiFileName].resources.ToList();
+                                newResource.AddRange(apiTemplate.resources);
+                                templateToWrite[apiFileName].resources = newResource.ToArray();
+                            }
+                          
+                        }
+                        else
+                            templateToWrite.Add(apiFileName, apiTemplate);
                     }
+
+
+                    foreach (var item in templateToWrite)
+                    {
+                        fileWriter.WriteJSONToFile(item.Value, String.Concat(creatorConfig.outputLocation, item.Key));
+                    }
+
                     if (globalServicePolicyTemplate != null)
                     {
                         fileWriter.WriteJSONToFile(globalServicePolicyTemplate, String.Concat(creatorConfig.outputLocation, fileNames.globalServicePolicy));
