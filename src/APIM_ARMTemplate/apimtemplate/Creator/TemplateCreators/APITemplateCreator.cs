@@ -28,21 +28,27 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             this.releaseTemplateCreator = releaseTemplateCreator;
         }
 
-        public async Task<List<Template>> CreateAPITemplatesAsync(APIConfig api)
+        private static string GetRevisionApiName(APIConfig api)
         {
-            // determine if api needs to be split into multiple templates
-            bool isSplit = isSplitAPI(api);
-
-            // update api name if necessary (apiRevision > 1 and isCurrent = true) 
             int revisionNumber = 0;
             if (Int32.TryParse(api.apiRevision, out revisionNumber))
             {
                 if (revisionNumber > 1 && api.isCurrent == false)
                 {
                     string currentAPIName = api.name;
-                    api.name += $";rev={revisionNumber}";
+                    return api.name + $";rev={revisionNumber}";
                 }
             }
+            return api.name;
+        }
+
+        public async Task<List<Template>> CreateAPITemplatesAsync(APIConfig api)
+        {
+            // determine if api needs to be split into multiple templates
+            bool isSplit = isSplitAPI(api);
+
+            // update api name if necessary (apiRevision > 1 and isCurrent = true) 
+            //var apiName = GetRevisionApiName(api);            
 
             List<Template> apiTemplates = new List<Template>();
             if (isSplit == true)
@@ -336,7 +342,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
         public static string MakeResourceName(APIConfig api)
         {
-            return $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{api.name}')]";
+            var apiName = GetRevisionApiName(api);
+            return $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{apiName}')]";
         }
 
         public string[] CreateProtocols(APIConfig api)
