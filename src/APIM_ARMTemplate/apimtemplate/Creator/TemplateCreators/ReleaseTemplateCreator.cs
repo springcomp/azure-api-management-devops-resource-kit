@@ -7,6 +7,10 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         public ReleaseTemplateResource CreateAPIReleaseTemplateResource(APIConfig api, string[] dependsOn)
         {
             string releaseName = $"release-revision-{api.apiRevision}";
+
+            if (string.IsNullOrEmpty(api.apiRevision))
+                releaseName = $"release-initial-revision";
+
             // create release resource with properties
             ReleaseTemplateResource releaseTemplateResource = new ReleaseTemplateResource()
             {
