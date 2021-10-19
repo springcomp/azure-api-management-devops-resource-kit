@@ -152,7 +152,11 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 apiTemplateResource.properties.subscriptionKeyParameterNames = api.subscriptionKeyParameterNames;
                 apiTemplateResource.properties.path = api.suffix;
                 apiTemplateResource.properties.isCurrent = api.isCurrent;
-                apiTemplateResource.properties.displayName = string.IsNullOrEmpty(api.displayName) ? api.name : api.displayName;
+                apiTemplateResource.properties.displayName = string.IsNullOrEmpty(api.displayName) ?
+                            (IsRevisionOnlyAPI(api,this.creatorConfig) 
+                                ? $"[reference(resourceId('Microsoft.ApiManagement/service/apis', parameters('ApimServiceName'), '{api.name}'),'{GlobalConstants.APIVersion}').displayName]" 
+                                : api.name)
+                    : api.displayName;
                 apiTemplateResource.properties.protocols = this.CreateProtocols(api);
                 // set the version set id
                 if (api.apiVersionSetId != null)
