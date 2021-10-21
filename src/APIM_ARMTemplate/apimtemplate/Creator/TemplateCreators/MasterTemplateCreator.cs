@@ -2,6 +2,7 @@
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 using System.Threading.Tasks;
 using System;
+using System.Linq;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 {
@@ -95,6 +96,10 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     string originalAPIName = fileNameGenerator.GenerateOriginalAPIName(apiInfo.name);
                     string initialAPIDeploymentResourceName = $"{originalAPIName}-InitialAPITemplate";
                     string subsequentAPIDeploymentResourceName = $"{originalAPIName}-SubsequentAPITemplate";
+
+                    if (resources.Count(r => r.name == initialAPIDeploymentResourceName
+                            || r.name == subsequentAPIDeploymentResourceName) > 0)
+                        continue;
 
                     string initialAPIFileName = fileNameGenerator.GenerateCreatorAPIFileName(apiInfo.name, apiInfo.isSplit, true);
                     string initialAPIUri = GenerateLinkedTemplateUri(creatorConfig, initialAPIFileName);
