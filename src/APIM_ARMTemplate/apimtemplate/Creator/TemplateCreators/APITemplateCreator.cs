@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 apiTemplateResource.properties.apiVersionDescription = api.apiVersionDescription;
                 apiTemplateResource.properties.authenticationSettings = api.authenticationSettings;
                 apiTemplateResource.properties.subscriptionKeyParameterNames = api.subscriptionKeyParameterNames;
-                apiTemplateResource.properties.path = api.suffix;
+                apiTemplateResource.properties.path = ValidatePathString(api.suffix);
                 apiTemplateResource.properties.isCurrent = api.isCurrent;
                 apiTemplateResource.properties.displayName = string.IsNullOrEmpty(api.displayName) ? api.name : api.displayName;
                 apiTemplateResource.properties.protocols = this.CreateProtocols(api);
@@ -243,19 +243,9 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 apiTemplateResource.properties.format = format;
                 apiTemplateResource.properties.value = value;
 
-                // #562: deploying multiple versions of an API may fail because while trying to deploy the initial template
-                // overwrite the initial template’s path property to a dummy value
-                // this value will be restored when the subsequent template is deployed
-
-                if (isSplit && isInitial)
-                {
-                    apiTemplateResource.properties.path = api.suffix + $"/{Guid.NewGuid():n}";
-                }
-                else
-                {
-                    apiTemplateResource.properties.path = api.suffix;
-                }
-
+                // #562: be sure that there is not slash in the path to avoid conflict
+                apiTemplateResource.properties.path = ValidatePathString(api.suffix);
+                
                 apiTemplateResource.properties.serviceUrl = MakeServiceUrl(api);
 
             }
@@ -337,6 +327,13 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         public static string MakeResourceName(APIConfig api)
         {
             return $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{api.name}')]";
+        }
+
+        public static string ValidatePathString(string path)
+        {
+            if (path.StartsWith("/"))
+                return path.Substring(1);
+            return path;
         }
 
         public string[] CreateProtocols(APIConfig api)
