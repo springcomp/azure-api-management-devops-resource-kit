@@ -12,5 +12,18 @@ namespace apimtemplate.Creator.Utilities
                 (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)
                 ;
         }
+
+        public static bool IsJson(string fileContents)
+        {
+            try
+            {
+                object deserializedFileContents = JsonConvert.DeserializeObject<object>(fileContents);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
     }
 }

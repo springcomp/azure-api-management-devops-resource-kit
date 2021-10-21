@@ -17,7 +17,7 @@ namespace apimtemplate.Creator.Utilities
             string backendurlConfigContent = fileReader.RetrieveLocalFileContents(backendServiceUrlFile);
 
             //if the file is json file
-            if (fileReader.isJSON(backendurlConfigContent))
+            if (FileFormat.IsJson(backendurlConfigContent))
             {
                 List<BackendUrlsConfig> backendUrls = JsonConvert.DeserializeObject<List<BackendUrlsConfig>>(backendurlConfigContent);
 

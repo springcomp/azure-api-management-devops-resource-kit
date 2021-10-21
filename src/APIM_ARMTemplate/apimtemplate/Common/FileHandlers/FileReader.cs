@@ -108,18 +108,5 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
                 return RetrieveLocalFileContents(fileLocation);
             }
         }
-
-        public bool isJSON(string fileContents)
-        {
-            try
-            {
-                object deserializedFileContents = JsonConvert.DeserializeObject<object>(fileContents);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
     }
 }

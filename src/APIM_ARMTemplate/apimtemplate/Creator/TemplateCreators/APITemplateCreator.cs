@@ -191,9 +191,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 bool isVersionThree = false;
                 if (api.openApiSpecFormat == OpenApiSpecFormat.Unspecified)
                 {
-                    bool isJSON = this.fileReader.isJSON(fileContents);
-
-                    if (isJSON == true)
+                    bool isJSON = FileFormat.IsJson(fileContents);
+                    if (FileFormat.IsJson(fileContents))
                     {
                         var openAPISpecReader = new OpenAPISpecReader();
                         isVersionThree = await openAPISpecReader.isJSONOpenAPISpecVersionThreeAsync(api.openApiSpec);
