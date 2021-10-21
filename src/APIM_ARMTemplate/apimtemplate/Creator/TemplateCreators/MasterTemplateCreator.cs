@@ -2,6 +2,7 @@
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 using System.Threading.Tasks;
 using System;
+using System.Linq;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 {
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     {
                         string initialAPIFileName = fileNameGenerator.GenerateCreatorAPIFileName(apiInfo.name, apiInfo.isSplit, true);
                         string initialAPIUri = GenerateLinkedTemplateUri(creatorConfig, initialAPIFileName);
-                        string[] initialAPIDependsOn = CreateAPIResourceDependencies(creatorConfig, globalServicePolicyTemplate, apiVersionSetTemplate, productsTemplate, loggersTemplate, backendsTemplate, authorizationServersTemplate, tagTemplate, apiInfo);
+                        string[] initialAPIDependsOn = CreateAPIResourceDependencies(creatorConfig, globalServicePolicyTemplate, apiVersionSetTemplate, productsTemplate, loggersTemplate, backendsTemplate, authorizationServersTemplate, tagTemplate, apiInfo, apiInformation);
                         resources.Add(this.CreateLinkedMasterTemplateResource(initialAPIDeploymentResourceName, initialAPIUri, initialAPIDependsOn));
 
                     }
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     string unifiedAPIDeploymentResourceName = $"{originalAPIName}-APITemplate";
                     string unifiedAPIFileName = fileNameGenerator.GenerateCreatorAPIFileName(apiInfo.name, apiInfo.isSplit, true);
                     string unifiedAPIUri = GenerateLinkedTemplateUri(creatorConfig, unifiedAPIFileName);
-                    string[] unifiedAPIDependsOn = CreateAPIResourceDependencies(creatorConfig, globalServicePolicyTemplate, apiVersionSetTemplate, productsTemplate, loggersTemplate, backendsTemplate, authorizationServersTemplate, tagTemplate, apiInfo);
+                    string[] unifiedAPIDependsOn = CreateAPIResourceDependencies(creatorConfig, globalServicePolicyTemplate, apiVersionSetTemplate, productsTemplate, loggersTemplate, backendsTemplate, authorizationServersTemplate, tagTemplate, apiInfo, apiInformation);
                     resources.Add(this.CreateLinkedMasterTemplateResource(unifiedAPIDeploymentResourceName, unifiedAPIUri, unifiedAPIDependsOn));
                 }
             }
@@ -142,7 +143,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             Template backendsTemplate,
             Template authorizationServersTemplate,
             Template tagTemplate,
-            LinkedMasterTemplateAPIInformation apiInfo)
+            LinkedMasterTemplateAPIInformation apiInfo,
+            List<LinkedMasterTemplateAPIInformation> apiInformation)
         {
             List<string> apiDependsOn = new List<string>();
             if (globalServicePolicyTemplate != null && apiInfo.dependsOnGlobalServicePolicies == true)
@@ -174,8 +176,12 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 apiDependsOn.Add("[resourceId('Microsoft.Resources/deployments', 'tagTemplate')]");
             }
             if (apiInfo.dependsOnVersion != null)
-            {
-                apiDependsOn.Add($"[resourceId('Microsoft.Resources/deployments', '{apiInfo.dependsOnVersion}-SubsequentAPITemplate')]");
+            { 
+                var dependentVersion = apiInformation.First(a => a.name == apiInfo.dependsOnVersion);
+                if(dependentVersion.hasInitialRevisionOrVersion)
+                    apiDependsOn.Add($"[resourceId('Microsoft.Resources/deployments', '{apiInfo.dependsOnVersion}-InitialAPITemplate')]"); 
+                else if(dependentVersion.hasRevision)
+                    apiDependsOn.Add($"[resourceId('Microsoft.Resources/deployments', '{apiInfo.dependsOnVersion}-SubsequentAPITemplate')]");
             }
             return apiDependsOn.ToArray();
         }
