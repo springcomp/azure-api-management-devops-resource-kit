@@ -5,6 +5,10 @@ namespace apimtemplate.Creator.Utilities
 {
     public static class FileFormat
     {
+        public static bool IsUri(string openApiSpec)
+        {
+            return IsUri(openApiSpec, out Uri _);
+        }
         public static bool IsUri(string openApiSpec, out Uri uriResult)
         {
             return
