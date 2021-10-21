@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using apimtemplate.Creator.Utilities;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
@@ -29,8 +30,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
             // create global service policy resource with properties
             string globalServicePolicy = creatorConfig.policy;
-            Uri uriResult;
-            bool isUrl = Uri.TryCreate(globalServicePolicy, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+            var isUrl = FileFormat.IsUri(globalServicePolicy, out Uri _);
             // create policy resource with properties
             PolicyTemplateResource policyTemplateResource = new PolicyTemplateResource()
             {
@@ -53,8 +53,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
         public PolicyTemplateResource CreateAPIPolicyTemplateResource(APIConfig api, string[] dependsOn)
         {
-            Uri uriResult;
-            bool isUrl = Uri.TryCreate(api.policy, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+            var isUrl = FileFormat.IsUri(api.policy, out Uri uriResult);
             // create policy resource with properties
             PolicyTemplateResource policyTemplateResource = new PolicyTemplateResource()
             {
@@ -79,8 +78,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 product.name = product.displayName;
             }
 
-            Uri uriResult;
-            bool isUrl = Uri.TryCreate(product.policy, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+            var isUrl = FileFormat.IsUri(product.policy, out Uri uriResult);
             // create policy resource with properties
             PolicyTemplateResource policyTemplateResource = new PolicyTemplateResource()
             {
@@ -100,8 +98,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
         public PolicyTemplateResource CreateOperationPolicyTemplateResource(KeyValuePair<string, OperationsConfig> policyPair, string apiName, string[] dependsOn)
         {
-            Uri uriResult;
-            bool isUrl = Uri.TryCreate(policyPair.Value.policy, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+            var isUrl = FileFormat.IsUri(policyPair.Value.policy, out Uri uriResult);
             // create policy resource with properties
             PolicyTemplateResource policyTemplateResource = new PolicyTemplateResource()
             {

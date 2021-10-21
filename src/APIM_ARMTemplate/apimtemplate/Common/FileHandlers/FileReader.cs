@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract;
+using apimtemplate.Creator.Utilities;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
 {
@@ -14,9 +15,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
         public async Task<CreatorConfig> ConvertConfigYAMLToCreatorConfigAsync(string configFileLocation)
         {
             // determine whether file location is local file path or remote url and convert appropriately
-            Uri uriResult;
-            bool isUrl = Uri.TryCreate(configFileLocation, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
-            if (isUrl)
+            if (FileFormat.IsUri(configFileLocation, out Uri uriResult))
             {
                 // make a request to the provided url and convert the response's content
                 HttpClient client = new HttpClient();
@@ -83,9 +82,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
         public async Task<string> RetrieveFileContentsAsync(string fileLocation)
         {
             // determine whether file location is local file path or remote url and convert appropriately
-            Uri uriResult;
-            bool isUrl = Uri.TryCreate(fileLocation, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
-            if (isUrl)
+            if (FileFormat.IsUri(fileLocation, out Uri uriResult))
             {
                 // make a request to the provided url and convert the response's content
                 HttpClient client = new HttpClient();
