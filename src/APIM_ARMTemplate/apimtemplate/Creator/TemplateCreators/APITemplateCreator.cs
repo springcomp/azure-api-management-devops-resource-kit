@@ -28,22 +28,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             this.releaseTemplateCreator = releaseTemplateCreator;
         }
 
-        public async Task<List<Template>> CreateAPITemplatesAsync(APIConfig api)
+        public async Task<List<Template>> CreateAPITemplatesAsync(APIConfig api, bool isSplit)
         {
-            // determine if api needs to be split into multiple templates
-            bool isSplit = isSplitAPI(api);
-
-            // update api name if necessary (apiRevision > 1 and isCurrent = true) 
-            int revisionNumber = 0;
-            if (Int32.TryParse(api.apiRevision, out revisionNumber))
-            {
-                if (revisionNumber > 1 && api.isCurrent == false)
-                {
-                    string currentAPIName = api.name;
-                    api.name += $";rev={revisionNumber}";
-                }
-            }
-
             List<Template> apiTemplates = new List<Template>();
             if (isSplit == true)
             {
@@ -93,7 +79,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         {
             List<TemplateResource> resources = new List<TemplateResource>();
             // all child resources will depend on the api
-            string[] dependsOn = new string[] { $"[resourceId('Microsoft.ApiManagement/service/apis', parameters('{ParameterNames.ApimServiceName}'), '{api.name}')]" };
+            string[] dependsOn = new string[] { $"[resourceId('Microsoft.ApiManagement/service/apis', parameters('{ParameterNames.ApimServiceName}'), '{MakeApiResourceName(api)}')]" };
 
             PolicyTemplateResource apiPolicyResource = api.policy != null ? this.policyTemplateCreator.CreateAPIPolicyTemplateResource(api, dependsOn) : null;
             List<PolicyTemplateResource> operationPolicyResources = api.operations != null ? this.policyTemplateCreator.CreateOperationPolicyTemplateResources(api, dependsOn) : null;
@@ -101,7 +87,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             List<TagAPITemplateResource> tagAPIResources = api.tags != null ? this.tagAPITemplateCreator.CreateTagAPITemplateResources(api, dependsOn) : null;
             DiagnosticTemplateResource diagnosticTemplateResource = api.diagnostic != null ? this.diagnosticTemplateCreator.CreateAPIDiagnosticTemplateResource(api, dependsOn) : null;
             // add release resource if the name has been appended with ;rev{revisionNumber}
-            ReleaseTemplateResource releaseTemplateResource = api.name.Contains(";rev") == true ? this.releaseTemplateCreator.CreateAPIReleaseTemplateResource(api, dependsOn) : null;
+            ReleaseTemplateResource releaseTemplateResource = api.apiRevision != null && api.isCurrent == true ? this.releaseTemplateCreator.CreateAPIReleaseTemplateResource(api, dependsOn) : null;
 
             // add resources if not null
             if (apiPolicyResource != null) resources.Add(apiPolicyResource);
@@ -125,25 +111,91 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 properties = new APITemplateProperties(),
                 dependsOn = new string[] { }
             };
+            apiTemplateResource.properties.apiVersion = api.apiVersion;
+            apiTemplateResource.properties.apiVersionDescription = api.apiVersionDescription;
+            apiTemplateResource.properties.serviceUrl = MakeServiceUrl(api);
+            apiTemplateResource.properties.type = api.type;
+            apiTemplateResource.properties.apiType = api.type;
+            apiTemplateResource.properties.description = api.description;
+            apiTemplateResource.properties.subscriptionRequired = api.subscriptionRequired;
+            apiTemplateResource.properties.path = SanitizeApiSuffix(api.suffix);
+            apiTemplateResource.properties.displayName = string.IsNullOrEmpty(api.displayName) ? api.name : api.displayName;
+            
+            // add open api spec properties for subsequent and unified templates
+            string format;
+            string value;
+
+            // determine if the open api spec is remote or local, yaml or json
+            bool isUrl = IsUri(api, out var _);
+
+            string fileContents = null;
+            if (!isUrl || api.openApiSpecFormat == OpenApiSpecFormat.Unspecified)
+                fileContents = await this.fileReader.RetrieveFileContentsAsync(api.openApiSpec);
+
+            value = isUrl
+                ? api.openApiSpec
+                : fileContents
+                ;
+
+            bool isVersionThree = false;
+            if (api.openApiSpecFormat == OpenApiSpecFormat.Unspecified)
+            {
+                bool isJSON = this.fileReader.isJSON(fileContents);
+
+                if (isJSON == true)
+                {
+                    var openAPISpecReader = new OpenAPISpecReader();
+                    isVersionThree = await openAPISpecReader.isJSONOpenAPISpecVersionThreeAsync(api.openApiSpec);
+                }
+                format = GetOpenApiSpecFormat(isUrl, isJSON, isVersionThree);
+            }
+
+            else
+            {
+                format = GetOpenApiSpecFormat(isUrl, api.openApiSpecFormat);
+            }
+
+            // if the title needs to be modified
+            // we need to embed the OpenAPI definition
+
+            if (!string.IsNullOrEmpty(api.displayName))
+            {
+                // download definition
+
+                if (isUrl)
+                {
+                    try
+                    {
+                        using (var client = new WebClient())
+                            value = client.DownloadString(value);
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine($"Unable to download contract definition for {api.displayName} at the following location: '{api.openApiSpec}'.");
+                        throw;
+                    }
+                }
+
+                // update title
+
+                value = new OpenApi(value, format)
+                    .SetTitle(api.displayName)
+                    .GetDefinition()
+                    ;
+            }
+            apiTemplateResource.properties.format = format;
+            apiTemplateResource.properties.value = value;
+
 
             // add properties depending on whether the template is the initial, subsequent, or unified 
             if (!isSplit || !isInitial)
             {
                 // add metadata properties for initial and unified templates
-                apiTemplateResource.properties.apiVersion = api.apiVersion;
-                apiTemplateResource.properties.serviceUrl = MakeServiceUrl(api);
-                apiTemplateResource.properties.type = api.type;
-                apiTemplateResource.properties.apiType = api.type;
-                apiTemplateResource.properties.description = api.description;
-                apiTemplateResource.properties.subscriptionRequired = api.subscriptionRequired;
                 apiTemplateResource.properties.apiRevision = api.apiRevision;
                 apiTemplateResource.properties.apiRevisionDescription = api.apiRevisionDescription;
-                apiTemplateResource.properties.apiVersionDescription = api.apiVersionDescription;
                 apiTemplateResource.properties.authenticationSettings = api.authenticationSettings;
                 apiTemplateResource.properties.subscriptionKeyParameterNames = api.subscriptionKeyParameterNames;
-                apiTemplateResource.properties.path = api.suffix;
                 apiTemplateResource.properties.isCurrent = api.isCurrent;
-                apiTemplateResource.properties.displayName = string.IsNullOrEmpty(api.displayName) ? api.name : api.displayName;
                 apiTemplateResource.properties.protocols = this.CreateProtocols(api);
                 // set the version set id
                 if (api.apiVersionSetId != null)
@@ -172,67 +224,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             }
             if (!isSplit || isInitial)
             {
-                // add open api spec properties for subsequent and unified templates
-                string format;
-                string value;
-
-                // determine if the open api spec is remote or local, yaml or json
-                bool isUrl = IsUri(api, out var _);
-
-                string fileContents = null;
-                if (!isUrl || api.openApiSpecFormat == OpenApiSpecFormat.Unspecified)
-                    fileContents = await this.fileReader.RetrieveFileContentsAsync(api.openApiSpec);
-
-                value = isUrl
-                    ? api.openApiSpec
-                    : fileContents
-                    ;
-
-                bool isVersionThree = false;
-                if (api.openApiSpecFormat == OpenApiSpecFormat.Unspecified)
-                {
-                    bool isJSON = this.fileReader.isJSON(fileContents);
-
-                    if (isJSON == true)
-                    {
-                        var openAPISpecReader = new OpenAPISpecReader();
-                        isVersionThree = await openAPISpecReader.isJSONOpenAPISpecVersionThreeAsync(api.openApiSpec);
-                    }
-                    format = GetOpenApiSpecFormat(isUrl, isJSON, isVersionThree);
-                }
-
-                else
-                {
-                    format = GetOpenApiSpecFormat(isUrl, api.openApiSpecFormat);
-                }
-
-                // if the title needs to be modified
-                // we need to embed the OpenAPI definition
-
-                if (!string.IsNullOrEmpty(api.displayName))
-                {
-                    // download definition
-
-                    if (isUrl)
-                    {
-                        try {
-                            using (var client = new WebClient())
-                                value = client.DownloadString(value);
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine($"Unable to download contract definition for {api.displayName} at the following location: '{api.openApiSpec}'.");
-                            throw;
-                        }
-                    }
-
-                    // update title
-
-                    value = new OpenApi(value, format)
-                        .SetTitle(api.displayName)
-                        .GetDefinition()
-                        ;
-                }
+               
 
                 // set the version set id
                 if (api.apiVersionSetId != null)
@@ -240,23 +232,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     // point to the supplied version set if the apiVersionSetId is provided
                     apiTemplateResource.properties.apiVersionSetId = $"[resourceId('Microsoft.ApiManagement/service/apiVersionSets', parameters('{ParameterNames.ApimServiceName}'), '{api.apiVersionSetId}')]";
                 }
-                apiTemplateResource.properties.format = format;
-                apiTemplateResource.properties.value = value;
-
-                // #562: deploying multiple versions of an API may fail because while trying to deploy the initial template
-                // overwrite the initial template’s path property to a dummy value
-                // this value will be restored when the subsequent template is deployed
-
-                if (isSplit && isInitial)
-                {
-                    apiTemplateResource.properties.path = api.suffix + $"/{Guid.NewGuid():n}";
-                }
-                else
-                {
-                    apiTemplateResource.properties.path = api.suffix;
-                }
-
-                apiTemplateResource.properties.serviceUrl = MakeServiceUrl(api);
+                
 
             }
             return apiTemplateResource;
@@ -336,7 +312,20 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
         public static string MakeResourceName(APIConfig api)
         {
-            return $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{api.name}')]";
+            return $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{MakeApiResourceName(api)}')]";
+        }
+
+        public static string MakeApiResourceName(APIConfig api)
+        {
+            var apiRevision = api.apiRevision != null ? ";rev=" + api.apiRevision : String.Empty;
+            return $"{api.name}{apiRevision}";
+        }
+
+        public static string SanitizeApiSuffix(string path)
+        {
+            if (path?.StartsWith("/") == true)
+                return path.Substring(1);
+            return path;
         }
 
         public string[] CreateProtocols(APIConfig api)
@@ -353,10 +342,29 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             return protocols;
         }
 
-        public bool isSplitAPI(APIConfig apiConfig)
+        public static bool isSplitAPI(APIConfig apiConfig)
         {
-            // the api needs to be split into multiple templates if the user has supplied a version or version set - deploying swagger related properties at the same time as api version related properties fails, so they must be written and deployed separately
-            return apiConfig.apiVersion != null || apiConfig.apiVersionSetId != null || (apiConfig.authenticationSettings != null && apiConfig.authenticationSettings.oAuth2 != null && apiConfig.authenticationSettings.oAuth2.authorizationServerId != null);
+            // the api needs to be split into multiple templates if the user has supplied a revision, version or version set
+            // deploying swagger related properties at the same time as api version related properties fails,
+            // so they must be written and deployed separately
+            return apiConfig.apiRevision != null || 
+                    apiConfig.apiVersion != null || 
+                    apiConfig.apiVersionSetId != null || 
+                    (apiConfig.authenticationSettings != null && apiConfig.authenticationSettings.oAuth2 != null && apiConfig.authenticationSettings.oAuth2.authorizationServerId != null)
+                    ;
+        }
+
+        public static IList<string> GetSplittedAPI(CreatorConfig creatorConfig)
+        {
+            var apisSplitted =  
+                from apis in creatorConfig.apis
+                group apis by apis.name into grp
+                where grp.Count() > 1
+                    || (grp.Count() == 1 && isSplitAPI(grp.First()))
+                select grp.Key
+            ;
+            return apisSplitted.ToList<string>();
+            
         }
 
         private string MakeServiceUrl(APIConfig api)

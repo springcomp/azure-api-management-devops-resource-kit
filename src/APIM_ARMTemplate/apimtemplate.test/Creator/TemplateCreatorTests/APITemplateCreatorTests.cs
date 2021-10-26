@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
             APITemplateResource apiTemplateResource = await apiTemplateCreator.CreateAPITemplateResourceAsync(api, true, false);
 
             // assert
-            Assert.Equal($"[concat(parameters('ApimServiceName'), '/{api.name}')]", apiTemplateResource.name);
+            Assert.Equal($"[concat(parameters('ApimServiceName'), '/{api.name};rev={api.apiRevision}')]", apiTemplateResource.name);
             Assert.Equal($"[parameters('{ParameterNames.ServiceUrl}').{api.name}]", apiTemplateResource.properties.serviceUrl);
             Assert.Equal(api.name, apiTemplateResource.properties.displayName);
             Assert.Equal(api.apiVersion, apiTemplateResource.properties.apiVersion);
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
 
             // act
             // the above api config will create a unified api template with a single resource
-            List<Template> apiTemplates = await apiTemplateCreator.CreateAPITemplatesAsync(api);
+            List<Template> apiTemplates = await apiTemplateCreator.CreateAPITemplatesAsync(api, false);
             APITemplateResource apiTemplateResource = apiTemplates.FirstOrDefault().resources[0] as APITemplateResource;
 
             // assert
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
             APITemplateResource apiTemplateResource = await apiTemplateCreator.CreateAPITemplateResourceAsync(api, false, true);
 
             // assert
-            Assert.Equal($"[concat(parameters('ApimServiceName'), '/{api.name}')]", apiTemplateResource.name);
+            Assert.Equal($"[concat(parameters('ApimServiceName'), '/{api.name};rev={api.apiRevision}')]", apiTemplateResource.name);
             Assert.Equal(api.name, apiTemplateResource.properties.displayName);
             Assert.Equal(api.apiVersion, apiTemplateResource.properties.apiVersion);
             Assert.Equal(api.type, apiTemplateResource.properties.type);
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
 
             // act
             // the above api config will create a unified api template with a single resource
-            List<Template> apiTemplates = await apiTemplateCreator.CreateAPITemplatesAsync(api);
+            List<Template> apiTemplates = await apiTemplateCreator.CreateAPITemplatesAsync(api, true);
             APITemplateResource apiTemplateResource = apiTemplates.FirstOrDefault().resources[0] as APITemplateResource;
 
             // assert

@@ -1,7 +1,9 @@
 {
   "profiles": {
     "apimtemplate": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "create --configFile apim-config.yaml",
+      "workingDirectory": "C:\\Data\\github\\springComp\\httpbin-org-api"
     }
   }
 }
