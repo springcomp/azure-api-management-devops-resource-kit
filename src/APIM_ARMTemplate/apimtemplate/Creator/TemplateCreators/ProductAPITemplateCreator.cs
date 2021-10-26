@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             string[] productIDs = api.products.Split(", ");
             foreach (string productID in productIDs)
             {
-                ProductAPITemplateResource productAPITemplate = this.CreateProductAPITemplateResource(productID, api.name, dependsOn);
+                ProductAPITemplateResource productAPITemplate = this.CreateProductAPITemplateResource(productID, APITemplateCreator.MakeApiResourceName(api), dependsOn);
                 productAPITemplates.Add(productAPITemplate);
             }
             return productAPITemplates;
