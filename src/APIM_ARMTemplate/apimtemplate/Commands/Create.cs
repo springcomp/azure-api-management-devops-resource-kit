@@ -34,6 +34,9 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             // command options
             CommandOption preferredAPIsForDeployment = this.Option("--preferredAPIsForDeployment <preferredAPIsForDeployment>", "create ARM templates for the given APIs Name(comma separated) else leave this parameter blank then by default all api's will be considered", CommandOptionType.SingleValue);
 
+            // Suffix command options
+            CommandOption deploySuffix = this.Option("--deploySuffix <deploySuffix>", "append suffix to file name to not override ARM Log", CommandOptionType.SingleValue);
+
             this.HelpOption();
 
             this.OnExecute(async () =>
@@ -102,7 +105,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     PropertyTemplateCreator propertyTemplateCreator = new PropertyTemplateCreator();
                     TagTemplateCreator tagTemplateCreator = new TagTemplateCreator();
                     APITemplateCreator apiTemplateCreator = new APITemplateCreator(fileReader, policyTemplateCreator, productAPITemplateCreator, tagAPITemplateCreator, diagnosticTemplateCreator, releaseTemplateCreator);
-                    MasterTemplateCreator masterTemplateCreator = new MasterTemplateCreator();
+                    MasterTemplateCreator masterTemplateCreator = new MasterTemplateCreator(deploySuffix.Value());
 
                     // create templates from provided configuration
                     Console.WriteLine("Creating global service policy template");
