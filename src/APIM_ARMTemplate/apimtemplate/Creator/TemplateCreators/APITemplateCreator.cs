@@ -159,39 +159,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 format = GetOpenApiSpecFormat(isUrl, api.openApiSpecFormat);
             }
 
-            // if the title needs to be modified
-            // we need to embed the OpenAPI definition
-
-            if (!string.IsNullOrEmpty(api.displayName))
-            {
-                    format = GetOpenApiSpecFormat(false, isJSON, isVersionThree);
-
-                // download definition
-
-                if (isUrl)
-                {
-                    try
-                    {
-                        using (var client = new WebClient())
-                            value = client.DownloadString(value);
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine($"Unable to download contract definition for {api.displayName} at the following location: '{api.openApiSpec}'.");
-                        throw;
-                    }
-                }
-
-                // update title
-
-                value = new OpenApi(value, format)
-                    .SetTitle(api.displayName)
-                    .GetDefinition()
-                    ;
-            }
             apiTemplateResource.properties.format = format;
             apiTemplateResource.properties.value = value;
-
 
             // add properties depending on whether the template is the initial, subsequent, or unified 
             if (!isSplit || !isInitial)
