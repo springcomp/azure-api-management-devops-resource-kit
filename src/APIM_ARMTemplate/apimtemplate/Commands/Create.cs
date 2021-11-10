@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     Template productsTemplate = creatorConfig.products != null ? productTemplateCreator.CreateProductTemplate(creatorConfig) : null;
                     Console.WriteLine("Creating product/APIs template");
                     Console.WriteLine("------------------------------------------");
-                    Template productAPIsTemplate = (creatorConfig.products != null && creatorConfig.apis != null) ? productAPITemplateCreator.CreateProductAPITemplate(creatorConfig) : null;
+                    Template productAPIsTemplate = (creatorConfig.products != null || creatorConfig.apis != null) ? productAPITemplateCreator.CreateProductAPITemplate(creatorConfig) : null;
                     Console.WriteLine("Creating named values template");
                     Console.WriteLine("------------------------------------------");
                     Template propertyTemplate = creatorConfig.namedValues != null ? propertyTemplateCreator.CreatePropertyTemplate(creatorConfig) : null;
