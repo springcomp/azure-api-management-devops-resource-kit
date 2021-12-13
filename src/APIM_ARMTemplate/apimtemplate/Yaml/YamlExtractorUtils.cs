@@ -98,7 +98,9 @@ namespace apimtemplate.Yaml
             var apis  = group.First(r => r.Key == TemplateType.api).ToList();
             var globalPolicy = group.First(r => r.Key == TemplateType.policies).ToList();
             var operations = group.First(r => r.Key == TemplateType.operations).ToList();
-            var operationsPolicies = group.First(r => r.Key == TemplateType.oprationsPolicy).ToList();
+            var operationsPolicies = group.FirstOrDefault(r => r.Key == TemplateType.oprationsPolicy)?.ToList();
+            if (operationsPolicies == null)
+                operationsPolicies = new List<TemplateResource>();
             
 
 
