@@ -224,6 +224,22 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract
             return await CallApiManagementAsync(azToken, requestUrl);
         }
 
+        public async Task<object> GenerateSingleYamlAPIValueAsync(string apiName, Extractor exc)
+        {
+            string apimname = exc.sourceApimName, resourceGroup = exc.resourceGroup, fileFolder = exc.fileFolder, policyXMLBaseUrl = exc.policyXMLBaseUrl, policyXMLSasToken = exc.policyXMLSasToken;
+            string apiDetails = await GetAPIDetailsAsync(apimname, resourceGroup, apiName);
+
+            Console.WriteLine("------------------------------------------");
+            Console.WriteLine("Extracting resources from {0} API:", apiName);
+
+            // convert returned api to template resource class
+            JObject oApiDetails = JObject.Parse(apiDetails);
+            APITemplateResource apiResource = JsonConvert.DeserializeObject<APITemplateResource>(apiDetails);
+
+            return new { };
+
+        }
+
         public async Task<List<TemplateResource>> GenerateSingleAPIResourceAsync(string apiName, Extractor exc)
         {
             List<TemplateResource> templateResources = new List<TemplateResource>();
@@ -355,7 +371,25 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract
 
             return templateResources;
         }
+        public async Task<Object> GenerateApisValuesYamlAsync(string singleApiName, List<string> multipleApiNames, Extractor exc)
+        {
+            if (singleApiName != null)
+            {
+                // check if this api exist
+                try
+                {
+                    string apiDetails = await GetAPIDetailsAsync(exc.sourceApimName, exc.resourceGroup, singleApiName);
+                    Console.WriteLine("{0} API found ...", singleApiName);
+                    //templateResources.AddRange(await GenerateSingleYamlAPIValueAsync(singleApiName, exc));
+                }
+                catch (Exception)
+                {
+                    throw new Exception($"{singleApiName} API not found!");
+                }
+            }
 
+            return new { };
+        }
         public async Task<Template> GenerateAPIsARMTemplateAsync(string singleApiName, List<string> multipleApiNames, Extractor exc)
         {
             // initialize arm template

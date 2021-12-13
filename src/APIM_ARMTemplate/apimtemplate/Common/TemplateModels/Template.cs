@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
@@ -36,5 +37,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
         public string apiVersion { get; set; }
         public string scale { get; set; }
         public string[] dependsOn { get; set; }
+
+        public JObject properties { get; set; }
     }
 }

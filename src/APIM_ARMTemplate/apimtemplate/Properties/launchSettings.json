@@ -1,7 +1,8 @@
 {
   "profiles": {
     "apimtemplate": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "yaml --initPath=C:\\Temp\\apim-extract\\ --apimName=apim-lplcloud-dev"
     }
   }
 }

@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates
                 app.HelpOption(inherited: true);
                 app.Commands.Add(new CreateCommand());
                 app.Commands.Add(new ExtractCommand());
+                app.Commands.Add(new YamlCommand());
                 
                 app.OnExecute(() => {
                     ColoredConsole.Error.WriteLine("No commands specified, please specify a command");
