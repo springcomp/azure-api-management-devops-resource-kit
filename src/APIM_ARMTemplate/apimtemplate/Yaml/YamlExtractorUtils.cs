@@ -137,7 +137,8 @@ namespace apimtemplate.Yaml
                     var keyValues = JsonConvert.DeserializeObject<List<ExtractedNamedValue>>(keyValuesJson);
 
                     foreach (var k in keyValues)
-                        namedValuesExtracted.Add(k.id, k);
+                        if(!namedValuesExtracted.ContainsKey(k.id))
+                            namedValuesExtracted.Add(k.id, k);
                 }
                 
             }
