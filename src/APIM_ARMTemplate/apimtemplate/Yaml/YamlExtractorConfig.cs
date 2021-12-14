@@ -21,6 +21,13 @@ namespace apimtemplate.Yaml
         [Description("Named Values Path - default is initPath")]
         public string namedValuesPath { get; set; }
 
+        [Description("Name of a Single Api to generate")]
+        public string apiName { get; set; }
+
+
+        [Description("ResourceGroupName")]
+        public string resourceGroupName { get; set; }
+
 
         public void Validate()
         {

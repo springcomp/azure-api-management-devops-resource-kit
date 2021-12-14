@@ -1,10 +1,14 @@
 ﻿using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
+using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
 namespace apimtemplate.Yaml
@@ -56,6 +60,11 @@ namespace apimtemplate.Yaml
 
         static string BasePath;
 
+        static string ResourceGroupName;
+        static string ApiManagementName;
+
+        static EntityExtractor EntityExtractor_ = new EntityExtractor();
+
         public static void Extract(YamlExtractorConfig config)
         {
             //Init 
@@ -66,6 +75,10 @@ namespace apimtemplate.Yaml
 
             initPath = config.initPath;
             apimName = config.apimName;
+            var apiName = config.apiName;
+
+            ResourceGroupName = config.resourceGroupName;
+            ApiManagementName = apimName;
 
             var productKeyPath = @"keys.json";
             var namedValuesKeyPath = @"namedValues.json";
@@ -76,8 +89,11 @@ namespace apimtemplate.Yaml
 
             //initPath = @"C:\Temp\ilyass2";
             //apimName = "apim-lplcloud-prd";
-
-            var templatePath = Path.Combine(initPath, $"{apimName}-apis.template.json");
+            var templatePath = String.Empty;
+            if (String.IsNullOrEmpty(apiName))
+                templatePath = Path.Combine(initPath, $"{apimName}-apis.template.json");
+            else
+                templatePath = Path.Combine(initPath, $"{apimName}-{apiName}-api.template.json");
             var versionSetPath = Path.Combine(initPath, $"{apimName}-apiVersionSets.template.json");
             var productPath = Path.Combine(initPath, $"{apimName}-products.template.json");
             var productApiPath = Path.Combine(initPath, $"{apimName}-productAPIs.template.json");
@@ -191,7 +207,12 @@ namespace apimtemplate.Yaml
                     if (namedValuesExtracted.ContainsKey(namedValue.Key))
                         result.Add("value", namedValuesExtracted[namedValue.Key].value);
                     else
+                    {
+                        //Check if we can get the namedvalue from API
+                        var v = GetNamedValueFromApi(namedValue.Key).GetAwaiter().GetResult(); ;
                         result.Add("value", namedValue.Value.value);
+                    }
+                        
                 }
 
                 namedValues.Add(result);
@@ -211,8 +232,48 @@ namespace apimtemplate.Yaml
             File.WriteAllText(Path.Combine(BasePath, "namedValues.yaml"), s);
         }
 
+        private static async Task<string> GetNamedValueFromApi(string namedValueId)
+        {
+            //POST https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/namedValues/{namedValueId}/listValue?api-version=2021-08-01
+
+            (string azToken, string azSubId) = await EntityExtractor_.auth.GetAccessToken();
+            string requestUrl = string.Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.ApiManagement/service/{3}/namedValues/{4}/listValue?api-version={5}",
+               EntityExtractor.baseUrl, azSubId, ResourceGroupName, ApiManagementName, namedValueId, GlobalConstants.APIVersion);
+
+            return await EntityExtractor.CallApiManagementAsync(azToken, requestUrl);
+        }
+
+        private static async Task<IList<SubscriptionsTemplateResource>> GetSubscriptionFromProduct(string productId)
+        {
+            //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/subscriptions?$filter={$filter}&$top={$top}&$skip={$skip}&api-version=2021-08-01
+
+            (string azToken, string azSubId) = await EntityExtractor_.auth.GetAccessToken();
+            string requestUrl = string.Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.ApiManagement/service/{3}/subscriptions/?$filter=scope eq '/products/{4}'&api-version={5}",
+               EntityExtractor.baseUrl, azSubId, ResourceGroupName, ApiManagementName, productId, "2021-08-01");
+
+            var subJson =  await EntityExtractor.CallApiManagementAsync(azToken, requestUrl);
+            return Newtonsoft.Json.Linq.JObject.Parse(subJson).GetValue("value").ToObject<List<SubscriptionsTemplateResource>>();
+        }
+
+        private static async Task<string> GetSubscriptionSecretFromApi(string subscriptionId)
+        {
+            //POST https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/subscriptions/{sid}/listSecrets?api-version=2021-08-01
+
+            (string azToken, string azSubId) = await EntityExtractor_.auth.GetAccessToken();
+            string requestUrl = string.Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.ApiManagement/service/{3}/subscriptions/{4}/listSecrets?api-version={5}",
+               EntityExtractor.baseUrl, azSubId, ResourceGroupName, ApiManagementName, subscriptionId, "2021-08-01");
+            
+            return await EntityExtractor.CallApiManagementAsync(azToken, requestUrl, HttpMethod.Post);
+        }
+
         private static void GetExtractedKey(string path)
         {
+            if(!File.Exists(path))
+            {
+                Console.WriteLine("No file found to extract subscription key for product. Some informations may be missing");
+                return;
+            }
+            
             var jsonString = System.IO.File.ReadAllText(path);
             var keys = JsonConvert.DeserializeObject<ExctractedSubscription[]>(jsonString);
 
@@ -271,7 +332,7 @@ namespace apimtemplate.Yaml
                 {
                     { "displayName" , product.displayName },
                     { "description" , product.description },
-                    {"subscriptionRequired" , product.subscriptionRequired }
+                    { "subscriptionRequired" , product.subscriptionRequired }
                 }
             };
 
@@ -287,7 +348,29 @@ namespace apimtemplate.Yaml
                     )
                 );
             }
-                
+            else //Call Rest Api
+            {
+                if(!string.IsNullOrEmpty(productName))
+                {
+                    var subscriptionsForProducts = GetSubscriptionFromProduct(productName).GetAwaiter().GetResult();
+                    var subs = new List<Object>();
+                    foreach (var sub in subscriptionsForProducts)
+                    {
+                        var secretsJson = GetSubscriptionSecretFromApi(sub.name).GetAwaiter().GetResult();
+                        var secretObject = JObject.Parse(secretsJson);
+                        subs.Add(new
+                        {
+                            name = sub.name,
+                            ownerId = sub.properties.ownerId.Remove(0, sub.properties.ownerId.IndexOf("/user")),
+                            primaryKey = secretObject.Value<string>("primaryKey"),
+                            secondaryKey = secretObject.Value<string>("secondaryKey")
+                        });
+                    }
+                    o.product.Add("subscriptions", subs);
+                }
+
+            }
+
 
             var productYamlObject = new Dictionary<string, object>(){
                             { productName, o } };
