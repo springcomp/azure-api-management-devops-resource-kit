@@ -256,7 +256,7 @@ namespace apimtemplate.Yaml
 
         private static void CreateProduct(string productName, ProductsTemplateProperties product)
         {
-            var pDirectory = Path.Combine(BasePath, "ApiManagement", "Product");
+            var pDirectory = Path.Combine(BasePath, "ApiManagement", "Products");
             Directory.CreateDirectory(pDirectory);
 
             var serializer = new SerializerBuilder()
