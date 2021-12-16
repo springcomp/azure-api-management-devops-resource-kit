@@ -18,12 +18,16 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract
 
         public static async Task<string> CallApiManagementAsync(string azToken, string requestUrl)
         {
+            return await CallApiManagementAsync(azToken, requestUrl, HttpMethod.Get);
+        }
+        public static async Task<string> CallApiManagementAsync(string azToken, string requestUrl, HttpMethod method)
+        {
             if (_cache.TryGetValue(requestUrl, out string cachedResponseBody))
             {
                 return cachedResponseBody;
             }
 
-            var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+            var request = new HttpRequestMessage(method, requestUrl);
 
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", azToken);
 
