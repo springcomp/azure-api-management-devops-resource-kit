@@ -65,7 +65,7 @@ namespace apimtemplate.Yaml
 
         static EntityExtractor EntityExtractor_ = new EntityExtractor();
 
-        public static void Extract(YamlExtractorConfig config)
+        public static async Task ExtractAsync(YamlExtractorConfig config)
         {
             //Init 
             BasePath = Path.Combine("Helm");
@@ -134,7 +134,7 @@ namespace apimtemplate.Yaml
             }
 
 
-            ExtractApi(apis);
+            await ExtractApiAsync(apis);
         }
 
         private static void ExtractNamedValues(string path , string keyvaluespath)
@@ -266,6 +266,33 @@ namespace apimtemplate.Yaml
             return await EntityExtractor.CallApiManagementAsync(azToken, requestUrl, HttpMethod.Post);
         }
 
+        private static async Task<string> GetSwaggerUrl(string apiId)
+        {
+            //https://docs.microsoft.com/en-us/rest/api/apimanagement/current-ga/api-export/get#exportformat
+            var exportFormat = "openapi+json-link";
+
+            //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/apis/{apiId}?format={format}&export=true&api-version=2021-08-01
+            (string azToken, string azSubId) = await EntityExtractor_.auth.GetAccessToken();
+            string requestUrl = string.Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.ApiManagement/service/{3}/apis/{4}?format={5}&export=true&api-version={6}",
+               EntityExtractor.baseUrl, azSubId, ResourceGroupName, ApiManagementName, apiId,exportFormat, "2021-08-01");
+
+            var subJson = await EntityExtractor.CallApiManagementAsync(azToken, requestUrl);
+            return subJson;
+        }
+
+        private static string ResolveCorrectSwaggerOperationName(string swagger)
+        {
+            var json = JObject.Parse(swagger);
+            var operations = json.SelectToken("operations").SelectToken("value");
+            foreach(var operation in (JArray)operations)
+            {
+                var op = (string)operation["id"];
+                op = op.Remove(0,op.IndexOf("operations/")).Remove(0,"operations/".Length);
+                operation["id"] = op;
+            }
+
+            return json.ToString();
+        }
         private static void GetExtractedKey(string path)
         {
             if(!File.Exists(path))
@@ -324,7 +351,7 @@ namespace apimtemplate.Yaml
                     //.WithNamingConvention(CamelCaseNamingConvention.Instance)
                     .Build();
 
-            var directory = Path.Combine(BasePath,"configuration","products", productName);
+            var directory = Path.Combine(BasePath,"configuration","products", Helpers.GetProductName(productName));
             Directory.CreateDirectory(directory);
             var o = new
             {
@@ -380,12 +407,12 @@ namespace apimtemplate.Yaml
             if(ProductPolicyByName.ContainsKey(productName))
             {
                 var policy = ProductPolicyByName[productName];
-                var policyPath = Path.Combine(pDirectory, productName);
+                var policyPath = Path.Combine(pDirectory, Helpers.GetProductName(productName));
                 Directory.CreateDirectory(policyPath);
-                File.WriteAllText(Path.Combine(policyPath,"policy.xml"), policy.value);
+                File.WriteAllText(Path.Combine(policyPath,$"policy.{Helpers.GetEnvName(productName)}.xml"), policy.value);
             }
 
-            var valuesFiles = Path.Combine(directory, "values.yaml");
+            var valuesFiles = Path.Combine(directory, $"values.{Helpers.GetEnvName(productName)}.yaml");
             File.WriteAllText(valuesFiles, s);
         }
 
@@ -495,7 +522,7 @@ namespace apimtemplate.Yaml
             return operationByName;
         }
 
-        public static void ExtractApi(IEnumerable<TemplateResource> apis)
+        public static async Task ExtractApiAsync(IEnumerable<TemplateResource> apis)
         {
             var apiWithRev = new Dictionary<string, List<APITemplateProperties>> ();
             foreach(var api in apis.OrderBy(o=>o.name))
@@ -511,7 +538,7 @@ namespace apimtemplate.Yaml
                 }
                 else
                 {
-                    Directory.CreateDirectory(Path.Combine("apis", name));
+                    Directory.CreateDirectory(Path.Combine("apis", Helpers.GetApiName(name)));
                     apiWithRev.Add(name, new List<APITemplateProperties>() { props });
                 }
             }
@@ -521,28 +548,28 @@ namespace apimtemplate.Yaml
                 var name = api.Key;
                 var props = api.Value;
                 Console.WriteLine($"{name}");
-                CreateApis(name, props);
+                await CreateApisAsync(name, props);
             }
         }
 
-        public static void CreateApis(string name, List<APITemplateProperties> properties)
+        public static async Task CreateApisAsync(string name, List<APITemplateProperties> properties)
         {
             var serializer = new SerializerBuilder()
                    //.WithNamingConvention(CamelCaseNamingConvention.Instance)
                    .Build();
-            var directory = Path.Combine(BasePath, "configuration", "apis", name);
+            var directory = Path.Combine(BasePath, "configuration", "apis", Helpers.GetApiName(name));
             Dictionary<string, Dictionary<string, object>> result = null;
             foreach (var props in properties)
             {
                 
                 if(result == null)
                 {
-                    var o = CreateApi(name, props, false);
+                    var o = await CreateApiAsync(name, props, false);
                     result = o;
                 }
                 else
                 {
-                    var o = CreateApi(name, props, true);
+                    var o = await CreateApiAsync(name, props, true);
                     var a = result[name];
                     var api = a["api"];
                     var apiDic = api as Dictionary<string, object>;
@@ -565,13 +592,13 @@ namespace apimtemplate.Yaml
             }
 
             var s = serializer.Serialize(result);
-            var valuesFiles = Path.Combine(directory, "values.yaml");
+            var valuesFiles = Path.Combine(directory, $"values.{Helpers.GetEnvName(name)}.yaml");
             File.WriteAllText(valuesFiles, s);
         }
 
-        public static Dictionary<string, Dictionary<string, object>> CreateApi(string apiName, APITemplateProperties properties, bool isRevision)
+        public static async Task<Dictionary<string, Dictionary<string, object>>> CreateApiAsync(string apiName, APITemplateProperties properties, bool isRevision)
         {
-            var directory = Path.Combine(BasePath, "configuration", "apis", apiName);
+            var directory = Path.Combine(BasePath, "configuration", "apis", Helpers.GetApiName(apiName));
             var baseVersionSetPath = Path.Combine(BasePath, "configuration", "apiversion-sets");
             
             Directory.CreateDirectory(directory);
@@ -582,7 +609,7 @@ namespace apimtemplate.Yaml
                     .Build();
 
             var apiYamlObject = new Dictionary<string, object>(){
-                            { "name", apiName } };
+                            { "name", Helpers.GetApiName(apiName) } };
 
             apiYamlObject.CreateDictionaryElementIfExist("displayName", properties.displayName);
             apiYamlObject.CreateDictionaryElementIfExist("description", properties.description);
@@ -609,12 +636,12 @@ namespace apimtemplate.Yaml
                 var apiNameAllOperationPolicy = AllOperationByName[apiName];
                 if (apiNameAllOperationPolicy.format =="rawxml")
                 {
-                    var path = Path.Combine(BasePath, "ApiManagement", "Apis", apiName, "policies");
+                    var path = Path.Combine(BasePath, "ApiManagement", "Apis", Helpers.GetApiName(apiName), "policies");
                     if (isRevision)
                         path = Path.Combine(path, "revisions", properties.apiRevision); 
                     
                     Directory.CreateDirectory(path);
-                    var policyLink = Path.Combine(path, $"all-operations.xml");
+                    var policyLink = Path.Combine(path, $"all-operations.{Helpers.GetEnvName(apiName)}.xml");
                     File.WriteAllText(policyLink, apiNameAllOperationPolicy.value);
                     apiYamlObject.Add("policy", policyLink);
                 }
@@ -630,10 +657,10 @@ namespace apimtemplate.Yaml
                     string policyLink = null;
                     if(op.Value.format == "rawxml")
                     {
-                        var path = Path.Combine(BasePath, "ApiManagement", "Apis", apiName, "policies", "operations");
+                        var path = Path.Combine(BasePath, "ApiManagement", "Apis", Helpers.GetApiName(apiName), "policies", "operations");
 
                         Directory.CreateDirectory(path);
-                        policyLink = Path.Combine(path, $"{op.Key}.policy.xml");
+                        policyLink = Path.Combine(path, $"{op.Key}.{Helpers.GetEnvName(apiName)}.policy.xml");
                         File.WriteAllText(policyLink, op.Value.value);
                     }
 
@@ -684,16 +711,41 @@ namespace apimtemplate.Yaml
                     use = ProductByApi[apiName].ToArray()
                 };
                 var productsYaml = serializer.Serialize(products);
-                var productsPath = Path.Combine(directory, "products.yaml");
+                var productsPath = Path.Combine(directory, $"products.{Helpers.GetEnvName(apiName)}.yaml");
                 File.WriteAllText(productsPath, productsYaml);
             }
 
+            //Write Swagger
+            var swaggerJson = await GetSwaggerUrl(apiName);
+            var swaggerWithCorrectOperationName = ResolveCorrectSwaggerOperationName(swaggerJson);
+            File.WriteAllText(Path.Combine(directory, $"swagger.{Helpers.GetEnvName(apiName)}.json"), swaggerWithCorrectOperationName);
 
             return o;
             
         }
 
         
+    }
+
+    public static class Helpers
+    {
+
+        public static string GetProductName(string productName)
+        {
+            return GetApiName(productName);
+        }
+        public static string GetApiName(string sourceApiName)
+        {
+            var index = sourceApiName.IndexOf("-");
+            var apiName = sourceApiName.Remove(0, index+1);
+            return apiName;
+        }
+
+        public static string GetEnvName(string sourceApiName)
+        {
+            var index = sourceApiName.IndexOf("-");
+            return sourceApiName.Remove(index);
+        }
     }
 
     public static class YamlExtensions

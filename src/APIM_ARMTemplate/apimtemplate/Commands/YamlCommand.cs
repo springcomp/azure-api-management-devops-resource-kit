@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
                 config.Validate();
 
-                YamlExtractorUtils.Extract(config);
+                await YamlExtractorUtils.ExtractAsync(config);
 
                 Console.WriteLine("Creating global service policy template");
                 Console.WriteLine("------------------------------------------");
