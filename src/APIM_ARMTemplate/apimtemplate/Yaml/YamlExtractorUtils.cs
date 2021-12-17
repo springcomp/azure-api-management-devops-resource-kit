@@ -112,11 +112,9 @@ namespace apimtemplate.Yaml
             var group = apiTemplate.resources.GroupBy(r => r.type);
 
             var apis  = group.First(r => r.Key == TemplateType.api).ToList();
-            var globalPolicy = group.First(r => r.Key == TemplateType.policies).ToList();
-            var operations = group.First(r => r.Key == TemplateType.operations).ToList();
-            var operationsPolicies = group.FirstOrDefault(r => r.Key == TemplateType.oprationsPolicy)?.ToList();
-            if (operationsPolicies == null)
-                operationsPolicies = new List<TemplateResource>();
+            var globalPolicy = group.GetTemplateResourceOrEmptyList(TemplateType.policies);
+            var operations = group.GetTemplateResourceOrEmptyList(TemplateType.operations);
+            var operationsPolicies = group.GetTemplateResourceOrEmptyList(TemplateType.oprationsPolicy);
             
 
 
@@ -176,7 +174,7 @@ namespace apimtemplate.Yaml
             var dict = new Dictionary<string, PropertyResourceProperties>();
             foreach(var resource in template.resources)
             {
-                var name = resource.name.Remove(0, "[concat(parameters('ApimServiceName'), '/".Length).Replace("')]", "");
+                var name = resource.name.RemovePrefixARMResource().Replace("')]", "");
                 var props = resource.properties.ToObject<PropertyResourceProperties>();
                 dict.Add(name, props);
             }
@@ -240,7 +238,7 @@ namespace apimtemplate.Yaml
             string requestUrl = string.Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.ApiManagement/service/{3}/namedValues/{4}/listValue?api-version={5}",
                EntityExtractor.baseUrl, azSubId, ResourceGroupName, ApiManagementName, namedValueId, GlobalConstants.APIVersion);
 
-            return await EntityExtractor.CallApiManagementAsync(azToken, requestUrl);
+            return await EntityExtractor.CallApiManagementAsync(azToken, requestUrl,HttpMethod.Post);
         }
 
         private static async Task<IList<SubscriptionsTemplateResource>> GetSubscriptionFromProduct(string productId)
@@ -327,7 +325,7 @@ namespace apimtemplate.Yaml
 
             foreach(var productPolicy in productPolicies)
             {
-                var productName = productPolicy.name.Remove(0, "[concat(parameters('ApimServiceName'), '/".Length).Replace("/policy')]", "");
+                var productName = productPolicy.name.RemovePrefixARMResource().Replace("/policy')]", "");
                 var policy = productPolicy.properties.ToObject<PolicyTemplateProperties>();
                 ProductPolicyByName.Add(productName, policy);
             }
@@ -335,7 +333,7 @@ namespace apimtemplate.Yaml
 
             foreach(var product in products)
             {
-                var productName = product.name.Remove(0, "[concat(parameters('ApimServiceName'), '/".Length).Replace("')]", "");
+                var productName = product.name.RemovePrefixARMResource().Replace("')]", "");
                 var props = product.properties.ToObject<ProductsTemplateProperties>();
 
                 CreateProduct(productName, props);
@@ -388,7 +386,7 @@ namespace apimtemplate.Yaml
                         subs.Add(new
                         {
                             name = sub.name,
-                            ownerId = sub.properties.ownerId.Remove(0, sub.properties.ownerId.IndexOf("/user")),
+                            ownerId = sub.properties.ownerId?.Remove(0, sub.properties.ownerId.IndexOf("/user")),
                             primaryKey = secretObject.Value<string>("primaryKey"),
                             secondaryKey = secretObject.Value<string>("secondaryKey")
                         });
@@ -429,7 +427,7 @@ namespace apimtemplate.Yaml
 
             foreach (var productApiResource in productApiResources)
             {
-                var apiProduct = productApiResource.name.Remove(0, "[concat(parameters('ApimServiceName'), '/".Length).Replace("')]", "").Split("/");
+                var apiProduct = productApiResource.name.RemovePrefixARMResource().Replace("')]", "").Split("/");
                 var productName = apiProduct[0];
                 var apiName = apiProduct[1];
 
@@ -454,7 +452,7 @@ namespace apimtemplate.Yaml
 
             foreach (var versionSet in versionSets)
             {
-                var name = versionSet.name.Remove(0, "[concat(parameters('ApimServiceName'), '/".Length).Replace("')]","");
+                var name = versionSet.name.RemovePrefixARMResource().Replace("')]","");
                 var props = versionSet.properties.ToObject<APIVersionSetProperties>();
 
                 VersionSets.Add(name, props);
@@ -466,7 +464,7 @@ namespace apimtemplate.Yaml
             var result = new Dictionary<string, PolicyTemplateProperties>();
             foreach(var policy in policies)
             {
-                var apiName = policy.name.Remove(0, "[concat(parameters('ApimServiceName'), '/".Length).Replace("/policy')]", "");
+                var apiName = policy.name.RemovePrefixARMResource().Replace("/policy')]", "");
                 var props = policy.properties.ToObject<PolicyTemplateProperties>();
                 result.Add(apiName,props);
             }
@@ -508,7 +506,7 @@ namespace apimtemplate.Yaml
                 var apiName = dependsOn.Remove(0,"[resourceId('Microsoft.ApiManagement/service/apis', parameters('ApimServiceName'),".Length).Replace("')]", "");
                 var props = operation.properties.ToObject<OperationTemplateProperties>();
 
-                var apiNameAndOperations = operation.name.Remove(0, "[concat(parameters('ApimServiceName'), '/".Length).Replace("')]", "").Split("/");
+                var apiNameAndOperations = operation.name.RemovePrefixARMResource().Replace("')]", "").Split("/");
                 var operationName = apiNameAndOperations[1];
 
 
@@ -527,7 +525,7 @@ namespace apimtemplate.Yaml
             var apiWithRev = new Dictionary<string, List<APITemplateProperties>> ();
             foreach(var api in apis.OrderBy(o=>o.name))
             {
-                var name = api.name.Remove(0, "[concat(parameters('ApimServiceName'), '/".Length).Replace("')]","");
+                var name = api.name.RemovePrefixARMResource().Replace("')]","");
                 var props = api.properties.ToObject<APITemplateProperties>();
 
                 if (name.Contains(";rev="))
@@ -737,14 +735,33 @@ namespace apimtemplate.Yaml
         public static string GetApiName(string sourceApiName)
         {
             var index = sourceApiName.IndexOf("-");
-            var apiName = sourceApiName.Remove(0, index+1);
-            return apiName;
+            if (index != -1)
+            {
+                var apiName = sourceApiName.Remove(0, index + 1);
+                return apiName;
+            }
+            return sourceApiName;
         }
 
         public static string GetEnvName(string sourceApiName)
         {
             var index = sourceApiName.IndexOf("-");
-            return sourceApiName.Remove(index);
+            if(index != -1)
+                return sourceApiName.Remove(index);
+            return String.Empty;
+        }
+
+        public static IList<T> GetTemplateResourceOrEmptyList<T>(this IEnumerable<IGrouping<string,T>> enumerable, string key)
+        {
+            var f =  enumerable.FirstOrDefault(r => r.Key == key)?.ToList();
+            if (f == null)
+                f = new List<T>();
+            return f;
+        }
+
+        public static string RemovePrefixARMResource(this string resourceName)
+        {
+            return resourceName.Remove(0, "[concat(parameters('ApimServiceName'), '/".Length);
         }
     }
 
