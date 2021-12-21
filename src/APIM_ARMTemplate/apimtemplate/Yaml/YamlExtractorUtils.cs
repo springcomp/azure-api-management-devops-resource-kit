@@ -13,19 +13,6 @@ using YamlDotNet.Serialization;
 
 namespace apimtemplate.Yaml
 {
-    public class TemplateType
-    {
-       public const string api = "Microsoft.ApiManagement/service/apis";
-       public const string operations = "Microsoft.ApiManagement/service/apis/operations";
-       public const string oprationsPolicy = "Microsoft.ApiManagement/service/apis/operations/policies";
-       public const string schemas = "Microsoft.ApiManagement/service/apis/schemas";
-       public const string tags = "Microsoft.ApiManagement/service/apis/operations/tags";
-       public const string producs = "Microsoft.ApiManagement/service/products/apis";
-       public const string apidiagnostics = "Microsoft.ApiManagement/service/apis/diagnostics";
-       public const string policies = "Microsoft.ApiManagement/service/apis/policies";
-       public const string diagnostics = "Microsoft.ApiManagement/service/diagnostics";
-    }
-
     public class ExctractedSubscription
     {
         public string id { get; set; }
@@ -111,10 +98,10 @@ namespace apimtemplate.Yaml
             var apiTemplate = Newtonsoft.Json.JsonConvert.DeserializeObject<Template>(jsonString);
             var group = apiTemplate.resources.GroupBy(r => r.type);
 
-            var apis  = group.First(r => r.Key == TemplateType.api).ToList();
-            var globalPolicy = group.GetTemplateResourceOrEmptyList(TemplateType.policies);
-            var operations = group.GetTemplateResourceOrEmptyList(TemplateType.operations);
-            var operationsPolicies = group.GetTemplateResourceOrEmptyList(TemplateType.oprationsPolicy);
+            var apis  = group.First(r => r.Key == ResourceTypeConstants.API).ToList();
+            var globalPolicy = group.GetTemplateResourceOrEmptyList(ResourceTypeConstants.APIPolicy);
+            var operations = group.GetTemplateResourceOrEmptyList(ResourceTypeConstants.APIOperation);
+            var operationsPolicies = group.GetTemplateResourceOrEmptyList(ResourceTypeConstants.APIOperationPolicy);
             
 
 
