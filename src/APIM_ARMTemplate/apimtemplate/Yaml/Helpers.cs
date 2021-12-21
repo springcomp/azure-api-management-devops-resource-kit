@@ -30,6 +30,18 @@ namespace apimtemplate.Yaml
             return String.Empty;
         }
 
+        public static string GetResourceFileName(string apiName, string prefix, string suffix)
+        {
+            var env = Helpers.GetEnvName(apiName);
+            var fileNamePart = new List<string>();
+            fileNamePart.Add(prefix);
+            if (!String.IsNullOrEmpty(env))
+                fileNamePart.Add(env);
+            fileNamePart.Add(suffix);
+
+            return String.Join(".", fileNamePart.ToArray());
+        }
+
         public static IList<T> GetTemplateResourceOrEmptyList<T>(this IEnumerable<IGrouping<string,T>> enumerable, string key)
         {
             var f =  enumerable.FirstOrDefault(r => r.Key == key)?.ToList();

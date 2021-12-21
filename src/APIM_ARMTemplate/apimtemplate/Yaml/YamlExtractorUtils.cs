@@ -379,10 +379,11 @@ namespace apimtemplate.Yaml
                 var policy = ProductPolicyByName[productName];
                 var policyPath = Path.Combine(pDirectory, Helpers.GetProductName(productName));
                 Directory.CreateDirectory(policyPath);
-                File.WriteAllText(Path.Combine(policyPath,$"policy.{Helpers.GetEnvName(productName)}.xml"), policy.value);
+                var fileName = Helpers.GetResourceFileName(productName, "policy", "xml");
+                File.WriteAllText(Path.Combine(policyPath,fileName), policy.value);
             }
 
-            var valuesFiles = Path.Combine(directory, $"values.{Helpers.GetEnvName(productName)}.yaml");
+            var valuesFiles = Path.Combine(directory, Helpers.GetResourceFileName(productName,"values","yaml"));
             File.WriteAllText(valuesFiles, s);
         }
 
@@ -562,7 +563,7 @@ namespace apimtemplate.Yaml
             }
 
             var s = serializer.Serialize(result);
-            var valuesFiles = Path.Combine(directory, $"values.{Helpers.GetEnvName(name)}.yaml");
+            var valuesFiles = Path.Combine(directory, Helpers.GetResourceFileName(name, "values", "yaml"));// $"values.{Helpers.GetEnvName(name)}.yaml");
             File.WriteAllText(valuesFiles, s);
         }
 
@@ -611,7 +612,8 @@ namespace apimtemplate.Yaml
                         path = Path.Combine(path, "revisions", properties.apiRevision); 
                     
                     Directory.CreateDirectory(path);
-                    var policyLink = Path.Combine(path, $"all-operations.{Helpers.GetEnvName(apiName)}.xml");
+                    var fileName = Helpers.GetResourceFileName(apiName, "all-operations", "xml");
+                    var policyLink = Path.Combine(path, fileName);
                     File.WriteAllText(policyLink, apiNameAllOperationPolicy.value);
                     apiYamlObject.Add("policy", policyLink);
                 }
@@ -630,7 +632,8 @@ namespace apimtemplate.Yaml
                         var path = Path.Combine(BasePath, "ApiManagement", "Apis", Helpers.GetApiName(apiName), "policies", "operations");
 
                         Directory.CreateDirectory(path);
-                        policyLink = Path.Combine(path, $"{op.Key}.{Helpers.GetEnvName(apiName)}.policy.xml");
+                        var fileName = Helpers.GetResourceFileName(apiName, op.Key, "policy.xml");
+                        policyLink = Path.Combine(path, fileName);
                         File.WriteAllText(policyLink, op.Value.value);
                     }
 
@@ -681,14 +684,16 @@ namespace apimtemplate.Yaml
                     use = ProductByApi[apiName].ToArray()
                 };
                 var productsYaml = serializer.Serialize(products);
-                var productsPath = Path.Combine(directory, $"products.{Helpers.GetEnvName(apiName)}.yaml");
+                var fileName = Helpers.GetResourceFileName(apiName, "products", "yaml");
+                var productsPath = Path.Combine(directory, fileName);
                 File.WriteAllText(productsPath, productsYaml);
             }
 
             //Write Swagger
             var swaggerJson = await GetSwaggerUrl(apiName);
             var swaggerWithCorrectOperationName = ResolveCorrectSwaggerOperationName(swaggerJson);
-            File.WriteAllText(Path.Combine(directory, $"swagger.{Helpers.GetEnvName(apiName)}.json"), swaggerWithCorrectOperationName);
+            var swaggerFileName = Helpers.GetResourceFileName(apiName, "swagger", "json");
+            File.WriteAllText(Path.Combine(directory, swaggerFileName), swaggerWithCorrectOperationName);
 
             return o;
             
