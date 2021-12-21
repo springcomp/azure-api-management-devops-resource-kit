@@ -89,8 +89,6 @@ namespace apimtemplate.Yaml
             var operationsPolicies = group.GetTemplateResourceOrEmptyList(ResourceTypeConstants.APIOperationPolicy);
             
 
-
-            System.IO.Directory.CreateDirectory("apis");
             //Extract All Operations Policies.
             AllOperationByName = ExtractAllOperation(globalPolicy);
             OperationsByName = ExtractOperation(operations);
@@ -463,7 +461,6 @@ namespace apimtemplate.Yaml
                 }
                 else
                 {
-                    Directory.CreateDirectory(Path.Combine("apis", Helpers.GetApiName(name)));
                     apiWithRev.Add(name, new List<APITemplateProperties>() { props });
                 }
             }
