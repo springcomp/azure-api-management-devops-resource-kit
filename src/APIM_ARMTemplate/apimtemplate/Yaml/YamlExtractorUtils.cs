@@ -179,7 +179,7 @@ namespace apimtemplate.Yaml
                     else
                     {
                         //Check if we can get the namedvalue from API
-                        var v = GetNamedValueFromApi(namedValue.Key).GetAwaiter().GetResult(); ;
+                        var v = Helpers.GetNamedValueFromApi(EntityExtractor_,namedValue.Key, ResourceGroupName, ApiManagementName).GetAwaiter().GetResult(); ;
                         result.Add("value", namedValue.Value.value);
                     }
                         
@@ -202,53 +202,7 @@ namespace apimtemplate.Yaml
             File.WriteAllText(Path.Combine(BasePath, "namedValues.yaml"), s);
         }
 
-        private static async Task<string> GetNamedValueFromApi(string namedValueId)
-        {
-            //POST https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/namedValues/{namedValueId}/listValue?api-version=2021-08-01
-
-            (string azToken, string azSubId) = await EntityExtractor_.auth.GetAccessToken();
-            string requestUrl = string.Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.ApiManagement/service/{3}/namedValues/{4}/listValue?api-version={5}",
-               EntityExtractor.baseUrl, azSubId, ResourceGroupName, ApiManagementName, namedValueId, GlobalConstants.APIVersion);
-
-            return await EntityExtractor.CallApiManagementAsync(azToken, requestUrl,HttpMethod.Post);
-        }
-
-        private static async Task<IList<SubscriptionsTemplateResource>> GetSubscriptionFromProduct(string productId)
-        {
-            //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/subscriptions?$filter={$filter}&$top={$top}&$skip={$skip}&api-version=2021-08-01
-
-            (string azToken, string azSubId) = await EntityExtractor_.auth.GetAccessToken();
-            string requestUrl = string.Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.ApiManagement/service/{3}/subscriptions/?$filter=scope eq '/products/{4}'&api-version={5}",
-               EntityExtractor.baseUrl, azSubId, ResourceGroupName, ApiManagementName, productId, "2021-08-01");
-
-            var subJson =  await EntityExtractor.CallApiManagementAsync(azToken, requestUrl);
-            return Newtonsoft.Json.Linq.JObject.Parse(subJson).GetValue("value").ToObject<List<SubscriptionsTemplateResource>>();
-        }
-
-        private static async Task<string> GetSubscriptionSecretFromApi(string subscriptionId)
-        {
-            //POST https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/subscriptions/{sid}/listSecrets?api-version=2021-08-01
-
-            (string azToken, string azSubId) = await EntityExtractor_.auth.GetAccessToken();
-            string requestUrl = string.Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.ApiManagement/service/{3}/subscriptions/{4}/listSecrets?api-version={5}",
-               EntityExtractor.baseUrl, azSubId, ResourceGroupName, ApiManagementName, subscriptionId, "2021-08-01");
-            
-            return await EntityExtractor.CallApiManagementAsync(azToken, requestUrl, HttpMethod.Post);
-        }
-
-        private static async Task<string> GetSwaggerUrl(string apiId)
-        {
-            //https://docs.microsoft.com/en-us/rest/api/apimanagement/current-ga/api-export/get#exportformat
-            var exportFormat = "openapi+json-link";
-
-            //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/apis/{apiId}?format={format}&export=true&api-version=2021-08-01
-            (string azToken, string azSubId) = await EntityExtractor_.auth.GetAccessToken();
-            string requestUrl = string.Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.ApiManagement/service/{3}/apis/{4}?format={5}&export=true&api-version={6}",
-               EntityExtractor.baseUrl, azSubId, ResourceGroupName, ApiManagementName, apiId,exportFormat, "2021-08-01");
-
-            var subJson = await EntityExtractor.CallApiManagementAsync(azToken, requestUrl);
-            return subJson;
-        }
+       
 
         private static string ResolveCorrectSwaggerOperationName(string swagger)
         {
@@ -349,11 +303,11 @@ namespace apimtemplate.Yaml
             {
                 if(!string.IsNullOrEmpty(productName))
                 {
-                    var subscriptionsForProducts = GetSubscriptionFromProduct(productName).GetAwaiter().GetResult();
+                    var subscriptionsForProducts = Helpers.GetSubscriptionFromProduct(EntityExtractor_, productName, ResourceGroupName, ApiManagementName).GetAwaiter().GetResult();
                     var subs = new List<Object>();
                     foreach (var sub in subscriptionsForProducts)
                     {
-                        var secretsJson = GetSubscriptionSecretFromApi(sub.name).GetAwaiter().GetResult();
+                        var secretsJson = Helpers.GetSubscriptionSecretFromApi(EntityExtractor_, sub.name, ResourceGroupName, ApiManagementName).GetAwaiter().GetResult();
                         var secretObject = JObject.Parse(secretsJson);
                         subs.Add(new
                         {
@@ -690,7 +644,7 @@ namespace apimtemplate.Yaml
             }
 
             //Write Swagger
-            var swaggerJson = await GetSwaggerUrl(apiName);
+            var swaggerJson = await Helpers.GetSwaggerUrl(EntityExtractor_, apiName, ResourceGroupName, ApiManagementName);
             var swaggerWithCorrectOperationName = ResolveCorrectSwaggerOperationName(swaggerJson);
             var swaggerFileName = Helpers.GetResourceFileName(apiName, "swagger", "json");
             File.WriteAllText(Path.Combine(directory, swaggerFileName), swaggerWithCorrectOperationName);
