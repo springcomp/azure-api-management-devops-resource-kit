@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
+﻿using apimtemplate.Yaml.Models;
+using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,22 +14,6 @@ using YamlDotNet.Serialization;
 
 namespace apimtemplate.Yaml
 {
-    public class ExctractedSubscription
-    {
-        public string id { get; set; }
-        public string productId { get; set; }
-        public string name { get; set; }
-        public string primaryKey { get; set; }
-        public string secondaryKey { get; set; }
-    }
-
-    public class ExtractedNamedValue
-    {
-        public string id { get; set; }
-        public string value { get; set; }
-        public string name { get; set; }
-        public bool secret { get; set; }
-    }
 
     public class YamlExtractorUtils
     {
@@ -43,7 +28,7 @@ namespace apimtemplate.Yaml
 
         static Dictionary<string, List<string>> ProductByApi;
 
-        static Dictionary<string, List<ExctractedSubscription>> ExtractedSubscriptionKey = new Dictionary<string, List<ExctractedSubscription>>();
+        static Dictionary<string, List<ExtractedSubscription>> ExtractedSubscriptionKey = new Dictionary<string, List<ExtractedSubscription>>();
 
         static string BasePath;
 
@@ -287,13 +272,13 @@ namespace apimtemplate.Yaml
             }
             
             var jsonString = System.IO.File.ReadAllText(path);
-            var keys = JsonConvert.DeserializeObject<ExctractedSubscription[]>(jsonString);
+            var keys = JsonConvert.DeserializeObject<ExtractedSubscription[]>(jsonString);
 
             foreach (var key in keys)
                 if (key.productId != null)//id can be null, ignore
                 {
                     if (!ExtractedSubscriptionKey.ContainsKey(key.productId))
-                        ExtractedSubscriptionKey.Add(key.productId, new List<ExctractedSubscription>());
+                        ExtractedSubscriptionKey.Add(key.productId, new List<ExtractedSubscription>());
 
                     ExtractedSubscriptionKey[key.productId].Add(key);
                 }
@@ -710,56 +695,5 @@ namespace apimtemplate.Yaml
         }
 
         
-    }
-
-    public static class Helpers
-    {
-
-        public static string GetProductName(string productName)
-        {
-            return GetApiName(productName);
-        }
-        public static string GetApiName(string sourceApiName)
-        {
-            var index = sourceApiName.IndexOf("-");
-            if (index != -1)
-            {
-                var apiName = sourceApiName.Remove(0, index + 1);
-                return apiName;
-            }
-            return sourceApiName;
-        }
-
-        public static string GetEnvName(string sourceApiName)
-        {
-            var index = sourceApiName.IndexOf("-");
-            if(index != -1)
-                return sourceApiName.Remove(index);
-            return String.Empty;
-        }
-
-        public static IList<T> GetTemplateResourceOrEmptyList<T>(this IEnumerable<IGrouping<string,T>> enumerable, string key)
-        {
-            var f =  enumerable.FirstOrDefault(r => r.Key == key)?.ToList();
-            if (f == null)
-                f = new List<T>();
-            return f;
-        }
-
-        public static string RemovePrefixARMResource(this string resourceName)
-        {
-            return resourceName.Remove(0, "[concat(parameters('ApimServiceName'), '/".Length);
-        }
-    }
-
-    public static class YamlExtensions
-    {
-        public static void CreateDictionaryElementIfExist(this Dictionary<string, object> dico, string propertyName, object propertyValue)
-        {
-            if (propertyValue != null)
-            {
-                dico.Add(propertyName, propertyValue);
-            }
-        }
     }
 }
