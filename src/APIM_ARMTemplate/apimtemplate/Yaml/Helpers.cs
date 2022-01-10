@@ -11,15 +11,19 @@ namespace apimtemplate.Yaml
     public static class Helpers
     {
 
-        public static string GetProductName(string productName)
+        public static string GetProductName(string productName, out bool isEnvAvailable)
         {
-            return GetApiName(productName);
+            return GetApiName(productName,out isEnvAvailable);
         }
-        public static string GetApiName(string sourceApiName)
+     
+        public static string GetApiName(string sourceApiName, out bool isEnvAvailable)
         {
+            isEnvAvailable = false;
             var index = sourceApiName.IndexOf("-");
+            
             if (index != -1)
             {
+                isEnvAvailable = true;
                 var apiName = sourceApiName.Remove(0, index + 1);
                 return apiName;
             }

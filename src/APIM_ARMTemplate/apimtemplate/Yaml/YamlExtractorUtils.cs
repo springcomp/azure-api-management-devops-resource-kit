@@ -26,7 +26,7 @@ namespace apimtemplate.Yaml
 
         static Dictionary<String, PolicyTemplateProperties> ProductPolicyByName;
 
-        static Dictionary<string, List<string>> ProductByApi;
+        static Dictionary<string, List<string>> ProductByApi = new Dictionary<string, List<string>>();
 
         static Dictionary<string, List<ExtractedSubscription>> ExtractedSubscriptionKey = new Dictionary<string, List<ExtractedSubscription>>();
 
@@ -273,16 +273,23 @@ namespace apimtemplate.Yaml
                     //.WithNamingConvention(CamelCaseNamingConvention.Instance)
                     .Build();
 
-            var directory = Path.Combine(BasePath,"configuration","products", Helpers.GetProductName(productName));
+
+            var productNameWithoutEnv = Helpers.GetProductName(productName, out var isEnvProductAvailable);
+
+            var directory = Path.Combine(BasePath,"configuration","products", productNameWithoutEnv);
             Directory.CreateDirectory(directory);
-            var o = new
-            {
-                product = new Dictionary<string,object >()
+            var productEntry = new Dictionary<string, object>()
                 {
                     { "displayName" , product.displayName },
                     { "description" , product.description },
                     { "subscriptionRequired" , product.subscriptionRequired }
-                }
+                };
+            if (!isEnvProductAvailable)
+                productEntry.Add("useRawName", true);
+
+            var o = new
+            {
+                product = productEntry
             };
 
             if(ExtractedSubscriptionKey.ContainsKey(productName))
@@ -291,6 +298,7 @@ namespace apimtemplate.Yaml
                 o.product.Add("subscriptions", new List<object>(
                     subs.Select(s => new {
                         name = String.IsNullOrEmpty(s.id) ? s.productId:s.id,
+                        useRawName = true,
                         primaryKey = s.primaryKey,
                         secondaryKey = s.secondaryKey,
                     })
@@ -310,6 +318,7 @@ namespace apimtemplate.Yaml
                         subs.Add(new
                         {
                             name = sub.name,
+                            useRawName = true,
                             ownerId = sub.properties.ownerId?.Remove(0, sub.properties.ownerId.IndexOf("/user")),
                             primaryKey = secretObject.Value<string>("primaryKey"),
                             secondaryKey = secretObject.Value<string>("secondaryKey")
@@ -322,14 +331,14 @@ namespace apimtemplate.Yaml
 
 
             var productYamlObject = new Dictionary<string, object>(){
-                            { productName, o } };
+                            { productNameWithoutEnv, o } };
 
             var s = serializer.Serialize(productYamlObject);
 
             if(ProductPolicyByName.ContainsKey(productName))
             {
                 var policy = ProductPolicyByName[productName];
-                var policyPath = Path.Combine(pDirectory, Helpers.GetProductName(productName));
+                var policyPath = Path.Combine(pDirectory, Helpers.GetProductName(productName, out var isEnvAvailable));
                 Directory.CreateDirectory(policyPath);
                 var fileName = Helpers.GetResourceFileName(productName, "policy", "xml");
                 File.WriteAllText(Path.Combine(policyPath,fileName), policy.value);
@@ -479,7 +488,11 @@ namespace apimtemplate.Yaml
             var serializer = new SerializerBuilder()
                    //.WithNamingConvention(CamelCaseNamingConvention.Instance)
                    .Build();
-            var directory = Path.Combine(BasePath, "configuration", "apis", Helpers.GetApiName(name));
+
+            var ApiNameWithoutEnv = Helpers.GetApiName(name, out var isEnvApiAvailable);
+
+
+            var directory = Path.Combine(BasePath, "configuration", "apis", ApiNameWithoutEnv);
             Dictionary<string, Dictionary<string, object>> result = null;
             foreach (var props in properties)
             {
@@ -520,7 +533,9 @@ namespace apimtemplate.Yaml
 
         public static async Task<Dictionary<string, Dictionary<string, object>>> CreateApiAsync(string apiName, APITemplateProperties properties, bool isRevision)
         {
-            var directory = Path.Combine(BasePath, "configuration", "apis", Helpers.GetApiName(apiName));
+            var apiNameWithoutEnv = Helpers.GetApiName(apiName, out var isEnvApiAvailable);
+
+            var directory = Path.Combine(BasePath, "configuration", "apis", apiNameWithoutEnv);
             var baseVersionSetPath = Path.Combine(BasePath, "configuration", "apiversion-sets");
             
             Directory.CreateDirectory(directory);
@@ -530,8 +545,14 @@ namespace apimtemplate.Yaml
                     //.WithNamingConvention(CamelCaseNamingConvention.Instance)
                     .Build();
 
-            var apiYamlObject = new Dictionary<string, object>(){
-                            { "name", Helpers.GetApiName(apiName) } };
+            var apiYamlObject = new Dictionary<string, object>();
+            if (!isEnvApiAvailable)
+            {
+                apiYamlObject.CreateDictionaryElementIfExist("useRawName", true);
+                apiYamlObject.CreateDictionaryElementIfExist("name", apiNameWithoutEnv);
+            }
+
+
 
             apiYamlObject.CreateDictionaryElementIfExist("displayName", properties.displayName);
             apiYamlObject.CreateDictionaryElementIfExist("description", properties.description);
@@ -546,7 +567,7 @@ namespace apimtemplate.Yaml
             var o = new Dictionary<string, Dictionary<string,object>>()
             {
                 {
-                    apiName, new Dictionary<String,object>(){
+                    apiNameWithoutEnv, new Dictionary<String,object>(){
                         { "api" , apiYamlObject }
                     }
                 },
@@ -558,7 +579,7 @@ namespace apimtemplate.Yaml
                 var apiNameAllOperationPolicy = AllOperationByName[apiName];
                 if (apiNameAllOperationPolicy.format =="rawxml")
                 {
-                    var path = Path.Combine(BasePath, "ApiManagement", "Apis", Helpers.GetApiName(apiName), "policies");
+                    var path = Path.Combine(BasePath, "ApiManagement", "Apis", apiNameWithoutEnv, "policies");
                     if (isRevision)
                         path = Path.Combine(path, "revisions", properties.apiRevision); 
                     
@@ -580,7 +601,7 @@ namespace apimtemplate.Yaml
                     string policyLink = null;
                     if(op.Value.format == "rawxml")
                     {
-                        var path = Path.Combine(BasePath, "ApiManagement", "Apis", Helpers.GetApiName(apiName), "policies", "operations");
+                        var path = Path.Combine(BasePath, "ApiManagement", "Apis", apiNameWithoutEnv, "policies", "operations");
 
                         Directory.CreateDirectory(path);
                         var fileName = Helpers.GetResourceFileName(apiName, op.Key, "policy.xml");
