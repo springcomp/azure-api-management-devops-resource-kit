@@ -1,0 +1,55 @@
+name: 🚀 release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    name: 🚀 release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📚 Checkout 
+        uses: actions/checkout@v2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: src/APIM_ARMTemplate/apimtemplate/
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+        working-directory: src/APIM_ARMTemplate/apimtemplate/
+
+      - name: Pack
+        run: dotnet pack --configuration Release
+        working-directory: src/APIM_ARMTemplate/apimtemplate/
+
+      - name: ✉️ Create Release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: ${{ github.ref }}
+          tag_name: ${{ github.ref }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: upload windows artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: src/APIM_ARMTemplate/apimtemplate/bin/Release/apim-templates.${{ github.ref_name }}.nupkg
+          asset_name: apim-templates.${{ github.ref_name }}.nupkg
+          asset_content_type: application/zip
+          
+          
