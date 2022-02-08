@@ -7,7 +7,7 @@
     <LangVersion>preview</LangVersion>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>apim-extractor</ToolCommandName>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <AssemblyName>apim-extractor</AssemblyName>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
