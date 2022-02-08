@@ -6,8 +6,10 @@
     <ProjectGuid>{B5183465-2BC1-4206-9C9F-5AC9615AC941}</ProjectGuid>
     <LangVersion>preview</LangVersion>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>apim-templates</ToolCommandName>
+    <ToolCommandName>apim-extractor</ToolCommandName>
     <Version>1.0.0</Version>
+    <AssemblyName>apim-extractor</AssemblyName>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
