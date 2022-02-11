@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using apimtemplate.Creator.Utilities;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
@@ -27,7 +28,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
                     // Add previous product/API resource as a dependency for next product/API resource(s)
                     string productID = apiResources[apiResources.Count - 1].name.Split('/', 3)[1];
-                    dependsOn = new string[] { $"[resourceId('Microsoft.ApiManagement/service/products/apis', parameters('{ParameterNames.ApimServiceName}'), '{productID}', '{api.name}')]" };
+                    string apiName = APITemplateCreator.MakeApiResourceName(api);
+                    dependsOn = new string[] { $"[resourceId('Microsoft.ApiManagement/service/products/apis', parameters('{ParameterNames.ApimServiceName}'), '{productID}', '{apiName}')]" };
                 }
             }
 
