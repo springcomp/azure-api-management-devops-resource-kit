@@ -202,18 +202,11 @@ namespace apimtemplate.Yaml
 
        
 
-        private static string ResolveCorrectSwaggerOperationName(string swagger)
+        private static string RemoveServerProperty(string swagger)
         {
-            var json = JObject.Parse(swagger);
-            var operations = json.SelectToken("operations").SelectToken("value");
-            foreach(var operation in (JArray)operations)
-            {
-                var op = (string)operation["id"];
-                op = op.Remove(0,op.IndexOf("operations/")).Remove(0,"operations/".Length);
-                operation["id"] = op;
-            }
-
-            return json.ToString();
+            var o = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(swagger);
+            o.Property("servers")?.Remove();
+            return o.ToString();
         }
         private static void GetExtractedKey(string path)
         {
@@ -662,10 +655,11 @@ namespace apimtemplate.Yaml
             }
 
             //Write Swagger
+            
             var swaggerJson = await Helpers.GetSwaggerUrl(EntityExtractor_, apiName, ResourceGroupName, ApiManagementName);
-            var swaggerWithCorrectOperationName = ResolveCorrectSwaggerOperationName(swaggerJson);
+            var swaggerWithoutServerProperty = RemoveServerProperty(swaggerJson);
             var swaggerFileName = Helpers.GetResourceFileName(apiName, "swagger", "json");
-            File.WriteAllText(Path.Combine(directory, swaggerFileName), swaggerWithCorrectOperationName);
+            File.WriteAllText(Path.Combine(directory, swaggerFileName), swaggerWithoutServerProperty);
 
             return o;
             

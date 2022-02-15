@@ -105,10 +105,11 @@ namespace apimtemplate.Yaml
             //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/apis/{apiId}?format={format}&export=true&api-version=2021-08-01
             (string azToken, string azSubId) = await entityExtractor.auth.GetAccessToken();
             string requestUrl = string.Format("{0}/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.ApiManagement/service/{3}/apis/{4}?format={5}&export=true&api-version={6}",
-               EntityExtractor.baseUrl, azSubId, resourceGroupName, apiManagementName, apiId, exportFormat, "2021-08-01");
+               EntityExtractor.baseUrl, azSubId, resourceGroupName, apiManagementName, apiId, System.Web.HttpUtility.UrlEncode(exportFormat), "2021-08-01");
 
             var subJson = await EntityExtractor.CallApiManagementAsync(azToken, requestUrl);
-            return subJson;
+            HttpResponseMessage swaggerJson = await (new HttpClient()).GetAsync(Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(subJson).value.link.ToString());
+            return await swaggerJson.Content.ReadAsStringAsync() ;
         }
     }
 }
