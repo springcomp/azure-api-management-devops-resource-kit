@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create;
 using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract
 {
@@ -55,8 +56,28 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract
             return armTemplate;
         }
 
+        protected async Task<string> GetNextPageAsync(string nextLink)
+        {
+            (string azToken, string _) = await auth.GetAccessToken();
+            return await CallApiManagementAsync(azToken, nextLink);
+        }
 
-        
+        protected async Task ForEachEntity(string response, Func<JToken, Task> onItem)
+        {
+            string nextLink = null;
 
+            do
+            {
+                var result = JObject.Parse(response);
+                nextLink = result.ContainsKey("nextLink") ? ((JValue)result["nextLink"]).Value<string>() : null;
+
+                foreach (var item in (JArray)(result["value"]))
+                    await onItem.Invoke(item);
+
+                if (nextLink != null)
+                    response = await GetNextPageAsync(nextLink);
+            }
+            while (nextLink != null);
+        }
     }
 }

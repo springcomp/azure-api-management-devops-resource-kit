@@ -97,9 +97,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract
 
             // pull all products for service
             string products = await GetProductsAsync(apimname, resourceGroup);
-            JObject oProducts = JObject.Parse(products);
 
-            foreach (var item in oProducts["value"])
+            await ForEachEntity(products, async (item) =>
             {
                 string productName = ((JValue)item["name"]).Value.ToString();
                 string productDetails = await GetProductDetailsAsync(apimname, resourceGroup, productName);
@@ -187,8 +186,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract
                         }
                     }
                     catch (Exception) { }
-                    }
-            }
+                }
+            });
 
             armTemplate.resources = templateResources.ToArray();
             return armTemplate;
