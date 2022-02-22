@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             // product
             if (productsTemplate != null)
             {
-                var dependsOn = new[] { "[resourceId('Microsoft.Resources/deployments', 'propertyTemplate')]", };
+                var dependsOn = new[] { $"[resourceId('Microsoft.Resources/deployments', 'propertyTemplate{deploySuffix_}')]", };
 
                 string productsUri = GenerateLinkedTemplateUri(creatorConfig, fileNames.products);
                 resources.Add(this.CreateLinkedMasterTemplateResource("productsTemplate", productsUri, dependsOn, null, false));
