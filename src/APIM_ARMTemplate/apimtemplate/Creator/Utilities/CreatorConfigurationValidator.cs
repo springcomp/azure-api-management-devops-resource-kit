@@ -177,11 +177,19 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     isValid = false;
                     throw new CommandParsingException(commandLineApplication, "API name is required");
                 }
-                if (api.openApiSpec == null)
-                {
-                    isValid = false;
-                    throw new CommandParsingException(commandLineApplication, "Open API Spec is required");
+
+                if (api.type == "graphql")
+                { 
                 }
+                else if (api.type == "http")
+                {
+                    if (api.openApiSpec == null)
+                    {
+                        isValid = false;
+                        throw new CommandParsingException(commandLineApplication, "Open API Spec is required");
+                    }
+                }
+
                 if (api.suffix == null)
                 {
                     isValid = false;

@@ -52,6 +52,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         public string serviceUrl { get; set; }
         // used to build type and apiType from APITemplateResource schema
         public string type { get; set; }
+        // location of the GraphQLSchema
+        public string graphQLSchema { get; set; }
         // openApiSpec file location (local or url), used to build protocols, value, and format from APITemplateResource schema
         public string openApiSpec { get; set; }
         // format of the API definition.

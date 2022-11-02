@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
         public string description { get; set; }
         public APITemplateAuthenticationSettings authenticationSettings { get; set; }
         public APITemplateSubscriptionKeyParameterNames subscriptionKeyParameterNames { get; set; }
-        public string type { get; set; }
+        public string type { get; set; } = "http";
         public string apiRevision { get; set; }
         public string apiVersion { get; set; }
         public Nullable<bool> isCurrent { get; set; }

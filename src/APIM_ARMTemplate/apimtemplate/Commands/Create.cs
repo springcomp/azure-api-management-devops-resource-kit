@@ -99,12 +99,21 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     PolicyTemplateCreator policyTemplateCreator = new PolicyTemplateCreator(fileReader);
                     ProductGroupTemplateCreator productGroupTemplateCreator = new ProductGroupTemplateCreator();
                     SubscriptionTemplateCreator productSubscriptionsTemplateCreator = new SubscriptionTemplateCreator();
+                    GraphQLSchemaTemplateCreator graphQLSchemaTemplateCreator = new GraphQLSchemaTemplateCreator(fileReader);
                     DiagnosticTemplateCreator diagnosticTemplateCreator = new DiagnosticTemplateCreator();
                     ReleaseTemplateCreator releaseTemplateCreator = new ReleaseTemplateCreator();
                     ProductTemplateCreator productTemplateCreator = new ProductTemplateCreator(policyTemplateCreator, productGroupTemplateCreator, productSubscriptionsTemplateCreator);
                     PropertyTemplateCreator propertyTemplateCreator = new PropertyTemplateCreator();
                     TagTemplateCreator tagTemplateCreator = new TagTemplateCreator();
-                    APITemplateCreator apiTemplateCreator = new APITemplateCreator(fileReader, policyTemplateCreator, productAPITemplateCreator, tagAPITemplateCreator, diagnosticTemplateCreator, releaseTemplateCreator);
+                    APITemplateCreator apiTemplateCreator = new APITemplateCreator(
+                        fileReader,
+                        policyTemplateCreator,
+                        productAPITemplateCreator,
+                        tagAPITemplateCreator,
+                        graphQLSchemaTemplateCreator,
+                        diagnosticTemplateCreator,
+                        releaseTemplateCreator);
+
                     MasterTemplateCreator masterTemplateCreator = new MasterTemplateCreator(deploySuffix.Value());
 
                     // create templates from provided configuration

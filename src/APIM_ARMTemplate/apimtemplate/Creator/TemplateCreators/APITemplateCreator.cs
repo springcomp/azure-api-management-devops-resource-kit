@@ -15,15 +15,24 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         private PolicyTemplateCreator policyTemplateCreator;
         private ProductAPITemplateCreator productAPITemplateCreator;
         private TagAPITemplateCreator tagAPITemplateCreator;
+        private GraphQLSchemaTemplateCreator graphQLSchemaTemplateCreator;
         private DiagnosticTemplateCreator diagnosticTemplateCreator;
         private ReleaseTemplateCreator releaseTemplateCreator;
 
-        public APITemplateCreator(FileReader fileReader, PolicyTemplateCreator policyTemplateCreator, ProductAPITemplateCreator productAPITemplateCreator, TagAPITemplateCreator tagAPITemplateCreator, DiagnosticTemplateCreator diagnosticTemplateCreator, ReleaseTemplateCreator releaseTemplateCreator)
+        public APITemplateCreator(
+            FileReader fileReader,
+            PolicyTemplateCreator policyTemplateCreator,
+            ProductAPITemplateCreator productAPITemplateCreator,
+            TagAPITemplateCreator tagAPITemplateCreator,
+            GraphQLSchemaTemplateCreator graphQLSchemaTemplateCreator,
+            DiagnosticTemplateCreator diagnosticTemplateCreator,
+            ReleaseTemplateCreator releaseTemplateCreator)
         {
             this.fileReader = fileReader;
             this.policyTemplateCreator = policyTemplateCreator;
             this.productAPITemplateCreator = productAPITemplateCreator;
             this.tagAPITemplateCreator = tagAPITemplateCreator;
+            this.graphQLSchemaTemplateCreator = graphQLSchemaTemplateCreator;
             this.diagnosticTemplateCreator = diagnosticTemplateCreator;
             this.releaseTemplateCreator = releaseTemplateCreator;
         }
@@ -58,7 +67,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
             if (!String.IsNullOrEmpty(api.serviceUrl))
             {
-                apiTemplate.parameters.Add(api.name + "-ServiceUrl", new TemplateParameterProperties() { type = "string", defaultValue=api.serviceUrl });
+                apiTemplate.parameters.Add(api.name + "-ServiceUrl", new TemplateParameterProperties() { type = "string", defaultValue = api.serviceUrl });
             }
 
             List<TemplateResource> resources = new List<TemplateResource>();
@@ -85,6 +94,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             List<PolicyTemplateResource> operationPolicyResources = api.operations != null ? this.policyTemplateCreator.CreateOperationPolicyTemplateResources(api, dependsOn) : null;
             List<ProductAPITemplateResource> productAPIResources = api.products != null ? this.productAPITemplateCreator.CreateProductAPITemplateResources(api, dependsOn) : null;
             List<TagAPITemplateResource> tagAPIResources = api.tags != null ? this.tagAPITemplateCreator.CreateTagAPITemplateResources(api, dependsOn) : null;
+            GraphQLSchemaTemplateResource schemaTemplateResource = !String.IsNullOrWhiteSpace(api.graphQLSchema) ? this.graphQLSchemaTemplateCreator.CreateGraphQLSchemaTemplateResource(api, dependsOn) : null;
             DiagnosticTemplateResource diagnosticTemplateResource = api.diagnostic != null ? this.diagnosticTemplateCreator.CreateAPIDiagnosticTemplateResource(api, dependsOn) : null;
             // add release resource if the name has been appended with ;rev{revisionNumber}
             ReleaseTemplateResource releaseTemplateResource = api.apiRevision != null && api.isCurrent == true ? this.releaseTemplateCreator.CreateAPIReleaseTemplateResource(api, dependsOn) : null;
@@ -93,6 +103,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             if (apiPolicyResource != null) resources.Add(apiPolicyResource);
             if (operationPolicyResources != null) resources.AddRange(operationPolicyResources);
             if (tagAPIResources != null) resources.AddRange(tagAPIResources);
+            if (schemaTemplateResource != null) resources.Add(schemaTemplateResource);
             if (diagnosticTemplateResource != null) resources.Add(diagnosticTemplateResource);
             if (releaseTemplateResource != null) resources.Add(releaseTemplateResource);
 
@@ -122,42 +133,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             apiTemplateResource.properties.subscriptionRequired = api.subscriptionRequired;
             apiTemplateResource.properties.path = SanitizeApiSuffix(api.suffix);
             apiTemplateResource.properties.displayName = string.IsNullOrEmpty(api.displayName) ? api.name : api.displayName;
-            
-            // add open api spec properties for subsequent and unified templates
-            string format;
-            string value;
 
-            // determine if the open api spec is remote or local, yaml or json
-                bool isJSON = false;
-            bool isUrl = IsUri(api, out var _);
-
-            string fileContents = null;
-            if (!isUrl || api.openApiSpecFormat == OpenApiSpecFormat.Unspecified)
-                fileContents = await this.fileReader.RetrieveFileContentsAsync(api.openApiSpec);
-
-            value = isUrl
-                ? api.openApiSpec
-                : fileContents
-                ;
-
-            bool isVersionThree = false;
-            if (api.openApiSpecFormat == OpenApiSpecFormat.Unspecified)
-            {
-                    isJSON = this.fileReader.isJSON(fileContents);
-
-                if (isJSON == true)
-                {
-                    var openAPISpecReader = new OpenAPISpecReader();
-                    isVersionThree = await openAPISpecReader.isJSONOpenAPISpecVersionThreeAsync(api.openApiSpec);
-                }
-                format = GetOpenApiSpecFormat(isUrl, isJSON, isVersionThree);
-            }
-
-            else
-            {
-                    isJSON = IsOpenApiSpecJson(api.openApiSpecFormat);
-                format = GetOpenApiSpecFormat(isUrl, api.openApiSpecFormat);
-            }
+            var (format, value) = await GetApiFormat(api);
 
             apiTemplateResource.properties.format = format;
             apiTemplateResource.properties.value = value;
@@ -199,7 +176,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             }
             if (!isSplit || isInitial)
             {
-               
+
 
                 // set the version set id
                 if (api.apiVersionSetId != null)
@@ -207,10 +184,59 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     // point to the supplied version set if the apiVersionSetId is provided
                     apiTemplateResource.properties.apiVersionSetId = $"[resourceId('Microsoft.ApiManagement/service/apiVersionSets', parameters('{ParameterNames.ApimServiceName}'), '{api.apiVersionSetId}')]";
                 }
-                
+
 
             }
             return apiTemplateResource;
+        }
+
+        private Task<(string format, string value)> GetApiFormat(APIConfig api)
+            => api.type switch { 
+                "graphql" => GetGraphQLApiFormat(api),
+                "http" => GetOpenApiFormat(api),
+                _ => GetOpenApiFormat(api)
+            };
+
+        private Task<(string format, string value)> GetGraphQLApiFormat(APIConfig api)
+            => Task.FromResult(("graphql-link", api.serviceUrl));
+
+        private async Task<(string format, string value)> GetOpenApiFormat(APIConfig api)
+        {
+            // add open api spec properties for subsequent and unified templates
+            string format;
+            string value;
+
+            // determine if the open api spec is remote or local, yaml or json
+            bool isUrl = IsUri(api, out var _);
+
+            string fileContents = null;
+            if (!isUrl || api.openApiSpecFormat == OpenApiSpecFormat.Unspecified)
+                fileContents = await this.fileReader.RetrieveFileContentsAsync(api.openApiSpec);
+
+            value = isUrl
+                ? api.openApiSpec
+                : fileContents
+                ;
+
+            bool isVersionThree = false;
+            if (api.openApiSpecFormat == OpenApiSpecFormat.Unspecified)
+            {
+                var isJSON = this.fileReader.isJSON(fileContents);
+
+                if (isJSON == true)
+                {
+                    var openAPISpecReader = new OpenAPISpecReader();
+                    isVersionThree = await openAPISpecReader.isJSONOpenAPISpecVersionThreeAsync(api.openApiSpec);
+                }
+                format = GetOpenApiSpecFormat(isUrl, isJSON, isVersionThree);
+            }
+
+            else
+            {
+                format = GetOpenApiSpecFormat(isUrl, api.openApiSpecFormat);
+            }
+
+            return (format, value);
         }
 
         internal static IDictionary<string, string[]> GetApiVersionSets(CreatorConfig creatorConfig)
@@ -259,24 +285,6 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     throw new NotSupportedException();
             }
         }
-        private static bool IsOpenApiSpecJson(OpenApiSpecFormat openApiSpecFormat)
-        {
-            switch (openApiSpecFormat)
-            {
-                case OpenApiSpecFormat.Swagger_Json:
-                case OpenApiSpecFormat.OpenApi20_Json:
-                case OpenApiSpecFormat.OpenApi30_Json:
-                    return true;
-
-                case OpenApiSpecFormat.OpenApi20_Yaml:
-                case OpenApiSpecFormat.OpenApi30_Yaml:
-                    return false;
-
-                default:
-                    throw new NotSupportedException();
-            }
-        }
-
         private static bool IsUri(APIConfig api, out Uri uriResult)
         {
             return
@@ -322,16 +330,16 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             // the api needs to be split into multiple templates if the user has supplied a revision, version or version set
             // deploying swagger related properties at the same time as api version related properties fails,
             // so they must be written and deployed separately
-            return apiConfig.apiRevision != null || 
-                    apiConfig.apiVersion != null || 
-                    apiConfig.apiVersionSetId != null || 
+            return apiConfig.apiRevision != null ||
+                    apiConfig.apiVersion != null ||
+                    apiConfig.apiVersionSetId != null ||
                     (apiConfig.authenticationSettings != null && apiConfig.authenticationSettings.oAuth2 != null && apiConfig.authenticationSettings.oAuth2.authorizationServerId != null)
                     ;
         }
 
         public static IList<string> GetSplittedAPI(CreatorConfig creatorConfig)
         {
-            var apisSplitted =  
+            var apisSplitted =
                 from apis in creatorConfig.apis
                 group apis by apis.name into grp
                 where grp.Count() > 1
@@ -339,7 +347,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 select grp.Key
             ;
             return apisSplitted.ToList<string>();
-            
+
         }
 
         private string MakeServiceUrl(APIConfig api)

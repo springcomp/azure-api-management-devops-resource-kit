@@ -11,10 +11,19 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
             TemplateCreator templateCreator = new TemplateCreator();
             PolicyTemplateCreator policyTemplateCreator = new PolicyTemplateCreator(fileReader);
             ProductAPITemplateCreator productAPITemplateCreator = new ProductAPITemplateCreator();
+            GraphQLSchemaTemplateCreator graphQLSchemaTemplateCreator = new GraphQLSchemaTemplateCreator(fileReader);
             DiagnosticTemplateCreator diagnosticTemplateCreator = new DiagnosticTemplateCreator();
             ReleaseTemplateCreator releaseTemplateCreator = new ReleaseTemplateCreator();
             TagAPITemplateCreator tagAPITemplateCreator = new TagAPITemplateCreator();
-            APITemplateCreator apiTemplateCreator = new APITemplateCreator(fileReader, policyTemplateCreator, productAPITemplateCreator, tagAPITemplateCreator, diagnosticTemplateCreator, releaseTemplateCreator);
+            APITemplateCreator apiTemplateCreator = new APITemplateCreator(
+                fileReader,
+                policyTemplateCreator,
+                productAPITemplateCreator,
+                tagAPITemplateCreator,
+                graphQLSchemaTemplateCreator,
+                diagnosticTemplateCreator,
+                releaseTemplateCreator);
+
             return apiTemplateCreator;
         }
     }
