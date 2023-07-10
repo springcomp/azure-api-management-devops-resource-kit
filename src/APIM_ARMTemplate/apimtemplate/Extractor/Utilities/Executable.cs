@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Extract
                 Process.EnableRaisingEvents = true;
             }
 
-            var exitCodeTask = Process.WaitForExitAsync();
+            var exitCodeTask = ProcessExtensions.WaitForExitAsync(Process);
 
             if (timeout == null)
                 return await exitCodeTask;

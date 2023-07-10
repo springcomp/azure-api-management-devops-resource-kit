@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 if (api.type == "graphql")
                 { 
                 }
-                else if (api.type == "http")
+                else if (api.type == "http" || api.type == null)
                 {
                     if (api.openApiSpec == null)
                     {

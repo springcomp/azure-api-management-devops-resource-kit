@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
             this.HelpOption();
 
-            this.OnExecute(async () =>
+            this.OnExecuteAsync(async (token) =>
             {
                 // convert config file to CreatorConfig class
                 FileReader fileReader = new FileReader();
