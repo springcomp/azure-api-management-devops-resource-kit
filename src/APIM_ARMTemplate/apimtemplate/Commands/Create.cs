@@ -163,29 +163,29 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                                     creatorConfig.serviceUrlParameters.Where(s => s.apiName.Equals(api.name)).FirstOrDefault().serviceUrl : api.serviceUrl;
                             }
                             // create api templates from provided api config - if the api config contains a supplied apiVersion, split the templates into 2 for metadata and swagger content, otherwise create a unified template
-                        List<Template> apiTemplateSet = await apiTemplateCreator.CreateAPITemplatesAsync(api, splitApis.Any(c => c == api.name));
+                            List<Template> apiTemplateSet = await apiTemplateCreator.CreateAPITemplatesAsync(api, splitApis.Any(c => c == api.name));
                             apiTemplates.AddRange(apiTemplateSet);
                             // create the relevant info that will be needed to properly link to the api template(s) from the master template
-                        /* Add only One link to the API Information
-                        * an API can't change its name so :
-                        */
-                        if (!apiInformation.Any(apiI => apiI.name == api.name))
-                            apiInformation.Add(new LinkedMasterTemplateAPIInformation()
-                            {
-                                name = api.name,
-                                isSplit = splitApis.Any(c => c == api.name),
-                                dependsOnGlobalServicePolicies = creatorConfig.policy != null,
-                                dependsOnVersionSets = api.apiVersionSetId != null,
-                                dependsOnVersion = masterTemplateCreator.GetDependsOnPreviousApiVersion(api, apiVersions),
-                                dependsOnProducts = api.products != null,
-                                dependsOnTags = api.tags != null,
-                                dependsOnLoggers = await masterTemplateCreator.DetermineIfAPIDependsOnLoggerAsync(api, fileReader),
-                                dependsOnAuthorizationServers = api.authenticationSettings != null && api.authenticationSettings.oAuth2 != null && api.authenticationSettings.oAuth2.authorizationServerId != null,
-                                dependsOnBackends = await masterTemplateCreator.DetermineIfAPIDependsOnBackendAsync(api, fileReader),
-                                isServiceUrlParameterize = isServiceUrlParameterizeInYml,
-                                hasInitialRevisionOrVersion = creatorConfig.apis.Any(c => c.name == api.name && string.IsNullOrWhiteSpace(c.apiRevision)),
-                                hasRevision = creatorConfig.apis.Any(c => c.name == api.name && (c.apiRevision ?? "").Trim() != ""),
-                            });
+                            /* Add only One link to the API Information
+                            * an API can't change its name so :
+                            */
+                            if (!apiInformation.Any(apiI => apiI.name == api.name))
+                                apiInformation.Add(new LinkedMasterTemplateAPIInformation()
+                                {
+                                    name = api.name,
+                                    isSplit = splitApis.Any(c => c == api.name),
+                                    dependsOnGlobalServicePolicies = creatorConfig.policy != null,
+                                    dependsOnVersionSets = api.apiVersionSetId != null,
+                                    dependsOnVersion = masterTemplateCreator.GetDependsOnPreviousApiVersion(api, apiVersions),
+                                    dependsOnProducts = api.products != null,
+                                    dependsOnTags = api.tags != null,
+                                    dependsOnLoggers = await masterTemplateCreator.DetermineIfAPIDependsOnLoggerAsync(api, fileReader),
+                                    dependsOnAuthorizationServers = api.authenticationSettings != null && api.authenticationSettings.oAuth2 != null && api.authenticationSettings.oAuth2.authorizationServerId != null,
+                                    dependsOnBackends = await masterTemplateCreator.DetermineIfAPIDependsOnBackendAsync(api, fileReader),
+                                    isServiceUrlParameterize = isServiceUrlParameterizeInYml,
+                                    hasInitialRevisionOrVersion = creatorConfig.apis.Any(c => c.name == api.name && string.IsNullOrWhiteSpace(c.apiRevision)),
+                                    hasRevision = creatorConfig.apis.Any(c => c.name == api.name && (c.apiRevision ?? "").Trim() != ""),
+                                });
                         }
                     }
 
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                         APITemplateResource apiResource = apiTemplate.resources.FirstOrDefault(resource => resource.type == ResourceTypeConstants.API) as APITemplateResource;
                         APIConfig providedAPIConfiguration = creatorConfig.apis.FirstOrDefault(api => string.Compare(apiResource.name, APITemplateCreator.MakeResourceName(api), true) == 0);
                         // if the api version is not null the api is split into multiple templates. If the template is split and the content value has been set, then the template is for a subsequent api
-                        string apiFileName = fileNameGenerator.GenerateCreatorAPIFileName(providedAPIConfiguration.name, splitApis.Any(c => c == providedAPIConfiguration.name),isInitialAPI: providedAPIConfiguration.apiRevision == null);
+                        string apiFileName = fileNameGenerator.GenerateCreatorAPIFileName(providedAPIConfiguration.name, splitApis.Any(c => c == providedAPIConfiguration.name), isInitialAPI: providedAPIConfiguration.apiRevision == null);
                         if (templateToWrite.ContainsKey(apiFileName))
                         {
                             var newResource = templateToWrite[apiFileName].resources.ToList();
