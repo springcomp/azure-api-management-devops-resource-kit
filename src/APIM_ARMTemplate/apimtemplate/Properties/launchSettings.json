@@ -2,8 +2,8 @@
   "profiles": {
     "apimtemplate": {
       "commandName": "Project",
-      "commandLineArgs": "create --configFile dist\\apim-helm-engine\\templates\\apim-templates.config.yaml",
-      "workingDirectory": "C:\\Projects\\APIM\\engine-governance"
+      "commandLineArgs": "create --singleFile --configFile dist\\apim-helm-engine\\templates\\apim-templates.config.yaml",
+      "workingDirectory": "C:\\Projects\\APIM\\pioneer"
     }
   }
 }

@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using apimtemplate.Creator.Utilities;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 {
@@ -37,6 +39,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             // Suffix command options
             CommandOption deploySuffix = this.Option("--deploySuffix <deploySuffix>", "append suffix to file name to not override ARM Log", CommandOptionType.SingleValue);
 
+            CommandOption singleFile = this.Option("--singleFile", "generates target ARM resources in a single template file", CommandOptionType.NoValue);
+
             this.HelpOption();
 
             this.OnExecuteAsync(async (token) =>
@@ -49,6 +53,12 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 GlobalConstants.CommandStartDateTime = DateTime.Now.ToString("MMyyyydd  hh mm ss");
 
                 CreatorConfig creatorConfig = await fileReader.ConvertConfigYAMLToCreatorConfigAsync(configFile.Value());
+
+                // do not produce linked templates
+                // if a single file is requested
+
+                if (singleFile.Values?.Count > 0)
+                    creatorConfig.linked = false;
 
                 if (apimNameValue != null && !string.IsNullOrEmpty(apimNameValue.Value()))
                 {
@@ -193,8 +203,9 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     Console.WriteLine("------------------------------------------");
                     Template tagTemplate = creatorConfig.tags != null ? tagTemplateCreator.CreateTagTemplate(creatorConfig) : null;
 
-                    // create parameters file
+                    // create parameters file parameters to outputLocation
                     Template templateParameters = masterTemplateCreator.CreateMasterTemplateParameterValues(creatorConfig);
+                    fileWriter.WriteJSONToFile(templateParameters, String.Concat(creatorConfig.outputLocation, fileNames.parameters));
 
                     // write templates to outputLocation
                     if (creatorConfig.linked == true)
@@ -228,54 +239,220 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                         else
                             templateToWrite.Add(apiFileName, apiTemplate);
                     }
-                    foreach (var item in templateToWrite)
+
+                    if (singleFile.Values?.Count > 0)
                     {
-                        fileWriter.WriteJSONToFile(item.Value, String.Concat(creatorConfig.outputLocation, item.Key));
-                    }
-                    if (globalServicePolicyTemplate != null)
-                    {
-                        fileWriter.WriteJSONToFile(globalServicePolicyTemplate, String.Concat(creatorConfig.outputLocation, fileNames.globalServicePolicy));
-                    }
-                    if (apiVersionSetsTemplate != null)
-                    {
-                        fileWriter.WriteJSONToFile(apiVersionSetsTemplate, String.Concat(creatorConfig.outputLocation, fileNames.apiVersionSets));
-                    }
-                    if (productsTemplate != null)
-                    {
-                        fileWriter.WriteJSONToFile(productsTemplate, String.Concat(creatorConfig.outputLocation, fileNames.products));
-                    }
-                    if (productAPIsTemplate != null)
-                    {
-                        fileWriter.WriteJSONToFile(productAPIsTemplate, String.Concat(creatorConfig.outputLocation, fileNames.productAPIs));
-                    }
-                    if (propertyTemplate != null)
-                    {
-                        fileWriter.WriteJSONToFile(propertyTemplate, String.Concat(creatorConfig.outputLocation, fileNames.namedValues));
-                    }
-                    if (loggersTemplate != null)
-                    {
-                        fileWriter.WriteJSONToFile(loggersTemplate, String.Concat(creatorConfig.outputLocation, fileNames.loggers));
-                    }
-                    if (backendsTemplate != null)
-                    {
-                        fileWriter.WriteJSONToFile(backendsTemplate, String.Concat(creatorConfig.outputLocation, fileNames.backends));
-                    }
-                    if (authorizationServersTemplate != null)
-                    {
-                        fileWriter.WriteJSONToFile(authorizationServersTemplate, String.Concat(creatorConfig.outputLocation, fileNames.authorizationServers));
-                    }
-                    if (tagTemplate != null)
-                    {
-                        fileWriter.WriteJSONToFile(tagTemplate, String.Concat(creatorConfig.outputLocation, fileNames.tags));
+                        var targetTemplate = new TemplateCreator().CreateEmptyTemplate();
+                        targetTemplate.parameters = new Dictionary<string, TemplateParameterProperties> {
+                            { ParameterNames.ApimServiceName, new TemplateParameterProperties(){ type = "string" } }
+                        };
+
+                        if (globalServicePolicyTemplate != null)
+                        {
+                            foreach (var globalServicePolicy in globalServicePolicyTemplate.resources)
+                            {
+                                // make global service policy depend on properties
+                                globalServicePolicy.dependsOn = [
+                                    .. globalServicePolicy.dependsOn,
+                                    .. propertyTemplate.resources.Select(r => GetNamedValueResourceId(r))
+                                    ];
+                            }
+                        }
+
+                        foreach (var apiTemplate in templateToWrite.Values)
+                        {
+                            foreach (APITemplateResource apiResource in apiTemplate.resources.Where(r => r.type == MakeType("apis")))
+                            {
+                                var apiName = GetTypedResourceName(apiResource.name);
+                                var parameter = apiTemplate.parameters.SingleOrDefault(p => p.Key.StartsWith(apiName));
+                                if (parameter.Key != null)
+                                    targetTemplate.parameters.Add(parameter.Key, parameter.Value);
+
+                                // make apis depend on properties
+                                apiResource.dependsOn = apiResource.dependsOn.Concat(propertyTemplate.resources.Select(r => GetNamedValueResourceId(r)).ToArray()).ToArray();
+                                // TODO: make apis depend on tags
+                                // TODO: make apis depend on authorizationServers
+                                // TODO: make apis depend on backends
+                                // TODO: make apis depend on loggers
+
+                                // make apis depend on their version sets
+                                var apiVersionSetId = GetVersionSetResourceIdFromApiVersionSetId(apiResource);
+                                if (apiVersionSetId != null && apiVersionSetsTemplate.resources.Any(r => GetTypedResourceName(r.name) == apiVersionSetId))
+                                    apiResource.dependsOn = [
+                                        .. apiResource.dependsOn,
+                                        .. new[] { MakeApiVersionSetResourceId(apiVersionSetId), }
+                                        ];
+                            }
+                        }
+
+                        foreach (var productResource in productsTemplate.resources.Where(r => r.type == MakeType("products")))
+                        {
+                            // TODO: make products depend on tags
+                            // TODO: make products depend on loggers
+                        }
+
+                        foreach (var productResource in productsTemplate.resources.Where(r => r.type == MakeType("products/policies")))
+                        {
+                            // make product policies depend on properties
+                            productResource.dependsOn = productResource.dependsOn.Concat(propertyTemplate.resources.Select(r => GetNamedValueResourceId(r)).ToArray()).ToArray();
+                        }
+
+                        foreach (ProductAPITemplateResource productApiResource in productAPIsTemplate.resources)
+                        {
+                            var dependsOn = new List<string>();
+                            var (productName, apiName) = GetProductAndApiFromProductApiAssociation(productApiResource);
+
+                            // make productApis depend on their products
+                            if (productName != null && productsTemplate.resources.Any(r => GetTypedResourceName(r.name) == productName))
+                                dependsOn.Add(MakeProductResourceId(productName));
+
+                            // make productApis depend on their apis
+                            if (apiName != null && templateToWrite.Values.SelectMany(r => r.resources).Any(r => r.type == MakeType("apis") && GetTypedResourceName(r.name) == apiName))
+                                dependsOn.Add(MakeApiResourceId(apiName));
+
+                            productApiResource.dependsOn = [
+                                .. productApiResource.dependsOn,
+                                .. dependsOn
+                                ];
+                        }
+
+                        var templates = new List<Template> {
+                            tagTemplate,
+                            loggersTemplate,
+                            backendsTemplate,
+                            authorizationServersTemplate,
+
+                            propertyTemplate,
+                            apiVersionSetsTemplate,
+                            globalServicePolicyTemplate,
+                        };
+
+                        templates.AddRange(templateToWrite.Values);
+                        templates.AddRange(new[] {
+                            productsTemplate,
+                            productAPIsTemplate,
+                        });
+
+                        foreach (var template in templates)
+                        {
+                            if (template != null && template.resources.Length > 0)
+                                targetTemplate.resources = [
+                                    .. targetTemplate.resources,
+                                    .. template.resources
+                                    ];
+                        }
+
+                        fileWriter.WriteJSONToFile(targetTemplate, String.Concat(creatorConfig.outputLocation, fileNames.linkedMaster));
                     }
 
-                    // write parameters to outputLocation
-                    fileWriter.WriteJSONToFile(templateParameters, String.Concat(creatorConfig.outputLocation, fileNames.parameters));
+                    // write each ARM template in its own file
+
+                    else
+                    {
+                        foreach (var item in templateToWrite)
+                        {
+                            fileWriter.WriteJSONToFile(item.Value, String.Concat(creatorConfig.outputLocation, item.Key));
+                        }
+                        if (globalServicePolicyTemplate != null)
+                        {
+                            fileWriter.WriteJSONToFile(globalServicePolicyTemplate, String.Concat(creatorConfig.outputLocation, fileNames.globalServicePolicy));
+                        }
+                        if (apiVersionSetsTemplate != null)
+                        {
+                            fileWriter.WriteJSONToFile(apiVersionSetsTemplate, String.Concat(creatorConfig.outputLocation, fileNames.apiVersionSets));
+                        }
+                        if (productsTemplate != null)
+                        {
+                            fileWriter.WriteJSONToFile(productsTemplate, String.Concat(creatorConfig.outputLocation, fileNames.products));
+                        }
+                        if (productAPIsTemplate != null)
+                        {
+                            fileWriter.WriteJSONToFile(productAPIsTemplate, String.Concat(creatorConfig.outputLocation, fileNames.productAPIs));
+                        }
+                        if (propertyTemplate != null)
+                        {
+                            fileWriter.WriteJSONToFile(propertyTemplate, String.Concat(creatorConfig.outputLocation, fileNames.namedValues));
+                        }
+                        if (loggersTemplate != null)
+                        {
+                            fileWriter.WriteJSONToFile(loggersTemplate, String.Concat(creatorConfig.outputLocation, fileNames.loggers));
+                        }
+                        if (backendsTemplate != null)
+                        {
+                            fileWriter.WriteJSONToFile(backendsTemplate, String.Concat(creatorConfig.outputLocation, fileNames.backends));
+                        }
+                        if (authorizationServersTemplate != null)
+                        {
+                            fileWriter.WriteJSONToFile(authorizationServersTemplate, String.Concat(creatorConfig.outputLocation, fileNames.authorizationServers));
+                        }
+                        if (tagTemplate != null)
+                        {
+                            fileWriter.WriteJSONToFile(tagTemplate, String.Concat(creatorConfig.outputLocation, fileNames.tags));
+                        }
+                    }
+
                     Console.WriteLine("Templates written to output location");
-
                 }
                 return 0;
             });
+        }
+
+        private (string product, string api) GetProductAndApiFromProductApiAssociation(ProductAPITemplateResource resource)
+        {
+            var regex = new Regex(@"\[concat\(parameters\('ApimServiceName'\), '/(?<p>[^\\]+)/(?<a>[^']+)'\)\]");
+            var match = regex.Match(resource.name);
+            if (match.Success)
+                return (match.Groups["p"].Value, match.Groups["a"].Value);
+
+            throw new NotSupportedException();
+        }
+
+        private string? GetVersionSetResourceIdFromApiVersionSetId(APITemplateResource resource)
+        {
+            var regex = new Regex(@"\[resourceId\('Microsoft.ApiManagement/service/apiVersionSets', parameters\('ApimServiceName'\), '(?<n>[^']+)'\)\]");
+            var match = regex.Match(resource.properties.apiVersionSetId);
+            if (match.Success)
+            {
+                var versionSetId = match.Groups["n"].Value;
+                return versionSetId;
+            }
+
+            return null;
+        }
+
+        private string GetNamedValueResourceId(TemplateResource resource)
+        {
+            var regex = new Regex(@"\[concat\(parameters\('ApimServiceName'\), '/(?<n>[^']+)'\)\]");
+            var match = regex.Match(resource.name);
+            if (match.Success)
+            {
+                var name = match.Groups["n"].Value;
+                return MakeNamedValueResourceId(name);
+            }
+
+            throw new NotSupportedException();
+        }
+        private string MakeApiResourceId(string name)
+            => MakeTypedResourceId("apis", name);
+        private string MakeApiVersionSetResourceId(string apiVersionSetId)
+            => MakeTypedResourceId("apiVersionSets", apiVersionSetId);
+        private static string MakeNamedValueResourceId(string name)
+            => MakeTypedResourceId("namedValues", name);
+        private static string MakeProductResourceId(string name)
+            => MakeTypedResourceId("products", name);
+        private static string MakeTypedResourceId(string type, string name)
+            => $"[resourceId('{MakeType(type)}', parameters('ApimServiceName'), '{name}')]";
+        private static string MakeType(string type)
+            => $"Microsoft.ApiManagement/service/{type}";
+
+        private static string GetTypedResourceName(string name)
+        {
+            var regex = new Regex(@"\[concat\(parameters\('ApimServiceName'\), '/(?<n>[^\\]+)'\)\]");
+            var match = regex.Match(name);
+            if (match.Success)
+                return match.Groups["n"].Value;
+
+            throw new NotSupportedException();
         }
     }
 }
