@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         private string? GetVersionSetResourceIdFromApiVersionSetId(APITemplateResource resource)
         {
             var regex = new Regex(@"\[resourceId\('Microsoft.ApiManagement/service/apiVersionSets', parameters\('ApimServiceName'\), '(?<n>[^']+)'\)\]");
-            var match = regex.Match(resource.properties.apiVersionSetId);
+            var match = regex.Match(resource.properties.apiVersionSetId ?? "");
             if (match.Success)
             {
                 var versionSetId = match.Groups["n"].Value;
