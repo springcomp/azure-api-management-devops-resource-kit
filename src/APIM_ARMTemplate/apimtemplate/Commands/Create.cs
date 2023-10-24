@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                             { ParameterNames.ApimServiceName, new TemplateParameterProperties(){ type = "string" } }
                         };
 
-                        if (globalServicePolicyTemplate != null)
+                        if (globalServicePolicyTemplate != null && propertyTemplate?.resources?.Length > 0)
                         {
                             foreach (var globalServicePolicy in globalServicePolicyTemplate.resources)
                             {
@@ -269,7 +269,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                                     targetTemplate.parameters.Add(parameter.Key, parameter.Value);
 
                                 // make apis depend on properties
-                                apiResource.dependsOn = apiResource.dependsOn.Concat(propertyTemplate.resources.Select(r => GetNamedValueResourceId(r)).ToArray()).ToArray();
+                                if (propertyTemplate?.resources?.Length > 0)
+                                    apiResource.dependsOn = apiResource.dependsOn.Concat(propertyTemplate.resources.Select(r => GetNamedValueResourceId(r)).ToArray()).ToArray();
                                 // TODO: make apis depend on tags
                                 // TODO: make apis depend on authorizationServers
                                 // TODO: make apis depend on backends
@@ -296,7 +297,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                             foreach (var productResource in productsTemplate.resources.Where(r => r.type == MakeType("products/policies")))
                             {
                                 // make product policies depend on properties
-                                productResource.dependsOn = productResource.dependsOn.Concat(propertyTemplate.resources.Select(r => GetNamedValueResourceId(r)).ToArray()).ToArray();
+                                if (propertyTemplate?.resources?.Length > 0)
+                                    productResource.dependsOn = productResource.dependsOn.Concat(propertyTemplate.resources.Select(r => GetNamedValueResourceId(r)).ToArray()).ToArray();
                             }
                         }
 
