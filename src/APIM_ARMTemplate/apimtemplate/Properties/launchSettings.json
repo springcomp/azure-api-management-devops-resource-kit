@@ -3,7 +3,7 @@
     "apimtemplate": {
       "commandName": "Project",
       "commandLineArgs": "create --singleFile --configFile dist\\apim-helm-engine\\templates\\apim-templates.config.yaml",
-      "workingDirectory": "C:\\Projects\\APIM\\pioneer"
+      "workingDirectory": "C:\\Projects\\APIM\\apim-helm-templating-engine-myboutique-latam"
     }
   }
 }

@@ -285,35 +285,44 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                             }
                         }
 
-                        foreach (var productResource in productsTemplate.resources.Where(r => r.type == MakeType("products")))
+                        if (productsTemplate != null)
                         {
-                            // TODO: make products depend on tags
-                            // TODO: make products depend on loggers
+                            foreach (var productResource in productsTemplate.resources.Where(r => r.type == MakeType("products")))
+                            {
+                                // TODO: make products depend on tags
+                                // TODO: make products depend on loggers
+                            }
+
+                            foreach (var productResource in productsTemplate.resources.Where(r => r.type == MakeType("products/policies")))
+                            {
+                                // make product policies depend on properties
+                                productResource.dependsOn = productResource.dependsOn.Concat(propertyTemplate.resources.Select(r => GetNamedValueResourceId(r)).ToArray()).ToArray();
+                            }
                         }
 
-                        foreach (var productResource in productsTemplate.resources.Where(r => r.type == MakeType("products/policies")))
+                        if (productAPIsTemplate != null)
                         {
-                            // make product policies depend on properties
-                            productResource.dependsOn = productResource.dependsOn.Concat(propertyTemplate.resources.Select(r => GetNamedValueResourceId(r)).ToArray()).ToArray();
-                        }
+                            foreach (ProductAPITemplateResource productApiResource in productAPIsTemplate.resources)
+                            {
+                                var dependsOn = new List<string>();
+                                var (productName, apiName) = GetProductAndApiFromProductApiAssociation(productApiResource);
 
-                        foreach (ProductAPITemplateResource productApiResource in productAPIsTemplate.resources)
-                        {
-                            var dependsOn = new List<string>();
-                            var (productName, apiName) = GetProductAndApiFromProductApiAssociation(productApiResource);
+                                if (productsTemplate != null)
+                                {
+                                    // make productApis depend on their products
+                                    if (productName != null && productsTemplate.resources.Any(r => GetTypedResourceName(r.name) == productName))
+                                        dependsOn.Add(MakeProductResourceId(productName));
+                                }
 
-                            // make productApis depend on their products
-                            if (productName != null && productsTemplate.resources.Any(r => GetTypedResourceName(r.name) == productName))
-                                dependsOn.Add(MakeProductResourceId(productName));
+                                // make productApis depend on their apis
+                                if (apiName != null && templateToWrite.Values.SelectMany(r => r.resources).Any(r => r.type == MakeType("apis") && GetTypedResourceName(r.name) == apiName))
+                                    dependsOn.Add(MakeApiResourceId(apiName));
 
-                            // make productApis depend on their apis
-                            if (apiName != null && templateToWrite.Values.SelectMany(r => r.resources).Any(r => r.type == MakeType("apis") && GetTypedResourceName(r.name) == apiName))
-                                dependsOn.Add(MakeApiResourceId(apiName));
-
-                            productApiResource.dependsOn = [
-                                .. productApiResource.dependsOn,
-                                .. dependsOn
-                                ];
+                                productApiResource.dependsOn = [
+                                    .. productApiResource.dependsOn,
+                                    .. dependsOn
+                                    ];
+                            }
                         }
 
                         var templates = new List<Template> {
