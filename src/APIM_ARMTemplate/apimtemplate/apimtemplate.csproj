@@ -7,8 +7,8 @@
     <LangVersion>preview</LangVersion>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>apim-templates</ToolCommandName>
-    <Version>1.0.18</Version>
-    <PackageProjectUrl>https://github.com/springcomp/azure-api-management-devops-resource-kit/tree/1.0.7</PackageProjectUrl>
+    <Version>1.0.19</Version>
+    <PackageProjectUrl>https://github.com/springcomp/azure-api-management-devops-resource-kit/tree/1.0.19</PackageProjectUrl>
     <PackageId>apim-templates</PackageId>
     <RepositoryType>GitHub</RepositoryType>
     <PackageTags>apim</PackageTags>
