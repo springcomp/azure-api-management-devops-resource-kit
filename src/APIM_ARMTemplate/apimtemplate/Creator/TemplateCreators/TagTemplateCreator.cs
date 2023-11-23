@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 using System;
+using System.Linq;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 {
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 // create tag resource with properties
                 TagTemplateResource tagTemplateResource = new TagTemplateResource()
                 {
-                    name = $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{tag}')]",
+                    name = $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{MakeTagName(tag)}')]",
                     type = ResourceTypeConstants.Tag,
                     apiVersion = GlobalConstants.APIVersion,
                     properties = new TagTemplateProperties()

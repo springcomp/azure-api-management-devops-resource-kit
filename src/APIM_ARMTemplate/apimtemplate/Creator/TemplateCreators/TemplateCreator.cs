@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
+using System.Linq;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 {
@@ -30,5 +31,17 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             };
             return template;
         }
+
+        protected string MakeTagName(string tag)
+        {
+            var invalids = tag.ToCharArray().Where(IsValidTagIdentifier);
+            foreach (var c in invalids)
+                tag = tag.Replace(c.ToString(), "-");
+            return tag;
+        }
+
+            // https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules 
+        private bool IsValidTagIdentifier(char c)
+            => !"-1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".ToCharArray().Contains(c);
     }
 }

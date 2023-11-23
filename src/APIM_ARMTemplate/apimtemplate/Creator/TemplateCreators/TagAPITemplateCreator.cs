@@ -3,13 +3,13 @@ using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 {
-    public class TagAPITemplateCreator
+    public class TagAPITemplateCreator : TemplateCreator
     {
         public TagAPITemplateResource CreateTagAPITemplateResource(string tagName, string apiName, string[] dependsOn)
         {
             // create tags/apis resource with properties
             TagAPITemplateResource tagAPITemplateResource = new TagAPITemplateResource(){
-                name = $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{apiName}/{tagName}')]",
+                name = $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{apiName}/{MakeTagName(tagName)}')]",
                 type = ResourceTypeConstants.APITag,
                 apiVersion = GlobalConstants.APIVersion,
                 properties = new TagAPITemplateProperties(){
