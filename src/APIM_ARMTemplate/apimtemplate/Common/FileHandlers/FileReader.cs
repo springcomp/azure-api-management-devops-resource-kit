@@ -87,17 +87,24 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
             bool isUrl = Uri.TryCreate(fileLocation, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
             if (isUrl)
             {
-                // make a request to the provided url and convert the response's content
-                HttpClient client = new HttpClient();
-                HttpResponseMessage response = await client.GetAsync(uriResult);
-                if (response.IsSuccessStatusCode)
+                try
                 {
-                    string content = await response.Content.ReadAsStringAsync();
-                    return content;
+                    // make a request to the provided url and convert the response's content
+                    HttpClient client = new HttpClient();
+                    HttpResponseMessage response = await client.GetAsync(uriResult);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string content = await response.Content.ReadAsStringAsync();
+                        return content;
+                    }
+                    else
+                    {
+                        throw new Exception($"Unable to fetch remote file - {fileLocation}");
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    throw new Exception($"Unable to fetch remote file - {fileLocation}");
+                    throw new Exception($"Error retrieving remote file - {fileLocation}", e);
                 }
             }
             else
