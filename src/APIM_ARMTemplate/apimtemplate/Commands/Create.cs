@@ -45,14 +45,17 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
             this.OnExecuteAsync(async (token) =>
             {
-                // convert config file to CreatorConfig class
-                FileReader fileReader = new FileReader();
+                var configurationFile = configFile.Value();
+                var root = Path.GetDirectoryName(configurationFile);
+
+                FileReader fileReader = new FileReader(root);
                 bool considerAllApiForDeployments = true;
                 string[] preferredApis = null;
 
                 GlobalConstants.CommandStartDateTime = DateTime.Now.ToString("MMyyyydd  hh mm ss");
 
-                CreatorConfig creatorConfig = await fileReader.ConvertConfigYAMLToCreatorConfigAsync(configFile.Value());
+                // convert config file to CreatorConfig class
+                CreatorConfig creatorConfig = await fileReader.ConvertConfigYAMLToCreatorConfigAsync(configurationFile);
 
                 // do not produce linked templates
                 // if a single file is requested

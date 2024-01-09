@@ -11,6 +11,15 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
 {
     public class FileReader
     {
+        private readonly string? root_;
+        private readonly string currentDirectory_;
+
+        public FileReader(string? root = null)
+        {
+            root_ = root;
+            currentDirectory_ = Environment.CurrentDirectory;
+        }
+
         public async Task<CreatorConfig> ConvertConfigYAMLToCreatorConfigAsync(string configFileLocation)
         {
             // determine whether file location is local file path or remote url and convert appropriately
@@ -77,6 +86,17 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
 
         public string RetrieveLocalFileContents(string fileLocation)
         {
+            System.Diagnostics.Debug.Assert(!Path.IsPathFullyQualified(fileLocation));
+            System.Diagnostics.Debug.Assert(!fileLocation.StartsWith(".."));
+
+            if (root_ != null)
+            {
+                var alternateLocation = Path.GetFullPath(fileLocation);
+                alternateLocation = alternateLocation.Replace(currentDirectory_, root_);
+                if (File.Exists(alternateLocation))
+                    fileLocation = alternateLocation;
+            }
+
             return File.ReadAllText(fileLocation);
         }
 
