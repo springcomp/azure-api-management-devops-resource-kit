@@ -244,7 +244,9 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     {
                         var targetTemplate = new TemplateCreator().CreateEmptyTemplate();
                         targetTemplate.parameters = new Dictionary<string, TemplateParameterProperties> {
-                            { ParameterNames.ApimServiceName, new TemplateParameterProperties(){ type = "string" } }
+                            { ParameterNames.ApimServiceName, new TemplateParameterProperties(){ type = "string" } },
+                            { ParameterNames.LinkedTemplatesBaseUrl, new TemplateParameterProperties(){ type = "string", defaultValue = creatorConfig.linkedTemplatesBaseUrl } },
+                            { ParameterNames.LinkedTemplatesUrlQueryString, new TemplateParameterProperties(){ type = "string", defaultValue = creatorConfig.linkedTemplatesUrlQueryString } },
                         };
 
                         if (globalServicePolicyTemplate != null && propertyTemplate?.resources?.Length > 0)
