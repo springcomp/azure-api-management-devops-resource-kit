@@ -28,10 +28,11 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         }
 
         public List<SubscriptionsTemplateResource> CreateSubscriptionsTemplateResources(ProductConfig product, string[] dependsOn)
-        {
-            // TODO: throw error if scope is not null
+        { 
+            if(dependsOn?.Length != 1)            
+                throw new ApplicationException("A subscription can only depend on one single product");
 
-            var scope = $"/products/{product.name}";
+            var scope = dependsOn[0];
 
             var resources = new List<SubscriptionsTemplateResource>(product.subscriptions.Count);
 
