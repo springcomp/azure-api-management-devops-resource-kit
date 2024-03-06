@@ -273,13 +273,13 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     return isUrl ? "openapi-link" : "openapi";
 
                 case OpenApiSpecFormat.OpenApi20_Json:
-                    return isUrl ? "openapi-link" : "swagger-json";
+                    return isUrl ? "openapi+json-link" : "swagger-json";
 
                 case OpenApiSpecFormat.OpenApi30_Yaml:
                     return isUrl ? "openapi-link" : "openapi";
 
                 case OpenApiSpecFormat.OpenApi30_Json:
-                    return isUrl ? "openapi-link" : "openapi+json";
+                    return isUrl ? "openapi+json-link" : "openapi+json";
 
                 default:
                     throw new NotSupportedException();
