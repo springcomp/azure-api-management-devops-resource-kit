@@ -266,7 +266,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                             foreach (APITemplateResource apiResource in apiTemplate.resources.Where(r => r.type == MakeType("apis")))
                             {
                                 var apiName = GetTypedResourceName(apiResource.name);
-                                var parameter = apiTemplate.parameters.SingleOrDefault(p => p.Key.StartsWith(apiName));
+                                var rawApiName = GetRawApiName(apiName);
+                                var parameter = apiTemplate.parameters.SingleOrDefault(p => p.Key.StartsWith(rawApiName));
                                 if (parameter.Key != null)
                                     targetTemplate.parameters.Add(parameter.Key, parameter.Value);
 
@@ -467,5 +468,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
             throw new NotSupportedException();
         }
+
+        private static string GetRawApiName(string name)
+            => new Regex(";rev=.+").Replace(name, "");
     }
 }
