@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         // used to buld path from APITemplateResource schema
         public string suffix { get; set; }
         public bool subscriptionRequired { get; set; }
-        public bool isCurrent { get; set; }
+        public bool? isCurrent { get; set; }
         public string apiVersion { get; set; }
         public string apiVersionDescription { get; set; }
         public string apiVersionSetId { get; set; }

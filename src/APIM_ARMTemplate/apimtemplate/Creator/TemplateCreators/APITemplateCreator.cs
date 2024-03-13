@@ -190,13 +190,28 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             return apiTemplateResource;
         }
 
+        private string[] GetApiProtocols(APIConfig api)
+            => api.type switch
+            {
+                "websocket" => GetWebSocketApiProtocols(api),
+                _ => GetOpenApiProtocols(api),
+            };
+        private string[] GetWebSocketApiProtocols(APIConfig _)
+            => new[] { "ws", "wss" };
+        private string[] GetOpenApiProtocols(APIConfig _)
+            => new[] { "https" };
+
         private Task<(string format, string value)> GetApiFormat(APIConfig api)
-            => api.type switch { 
+            => api.type switch
+            {
                 "graphql" => GetGraphQLApiFormat(api),
                 "http" => GetOpenApiFormat(api),
+                "websocket" => GetWebSocketApiFormat(api),
                 _ => GetOpenApiFormat(api)
             };
 
+        private Task<(string format, string value)> GetWebSocketApiFormat(APIConfig _)
+            => Task.FromResult(((string)null, (string)null));
         private Task<(string format, string value)> GetGraphQLApiFormat(APIConfig api)
             => Task.FromResult(("graphql-link", api.serviceUrl));
 
@@ -320,7 +335,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             }
             else
             {
-                protocols = new string[1] { "https" };
+                protocols = GetApiProtocols(api);
             }
             return protocols;
         }
