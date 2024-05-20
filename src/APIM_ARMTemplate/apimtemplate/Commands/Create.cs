@@ -106,6 +106,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     AuthorizationServerTemplateCreator authorizationServerTemplateCreator = new AuthorizationServerTemplateCreator();
                     ProductAPITemplateCreator productAPITemplateCreator = new ProductAPITemplateCreator();
                     TagAPITemplateCreator tagAPITemplateCreator = new TagAPITemplateCreator();
+                    PolicyFragmentsTemplateCreator policyFragmentsTemplateCreator = new PolicyFragmentsTemplateCreator(fileReader);
                     PolicyTemplateCreator policyTemplateCreator = new PolicyTemplateCreator(fileReader);
                     ProductGroupTemplateCreator productGroupTemplateCreator = new ProductGroupTemplateCreator();
                     SubscriptionTemplateCreator productSubscriptionsTemplateCreator = new SubscriptionTemplateCreator();
@@ -127,6 +128,9 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     MasterTemplateCreator masterTemplateCreator = new MasterTemplateCreator(deploySuffix.Value());
 
                     // create templates from provided configuration
+                    Console.WriteLine("Creating policy fragments");
+                    Console.WriteLine("------------------------------------------");
+                    Template policyFragmentsTemplate = creatorConfig.fragments != null ? policyFragmentsTemplateCreator.CreatePolicyFragmentsTemplate(creatorConfig) : null;
                     Console.WriteLine("Creating global service policy template");
                     Console.WriteLine("------------------------------------------");
                     Template globalServicePolicyTemplate = creatorConfig.policy != null ? policyTemplateCreator.CreateGlobalServicePolicyTemplate(creatorConfig) : null;
@@ -249,14 +253,18 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                             { ParameterNames.LinkedTemplatesUrlQueryString, new TemplateParameterProperties(){ type = "string", defaultValue = creatorConfig.linkedTemplatesUrlQueryString } },
                         };
 
-                        if (globalServicePolicyTemplate != null && propertyTemplate?.resources?.Length > 0)
+                        if (
+                            globalServicePolicyTemplate != null &&
+                            (propertyTemplate?.resources?.Length > 0 || policyFragmentsTemplate?.resources?.Length > 0)
+                        )
                         {
                             foreach (var globalServicePolicy in globalServicePolicyTemplate.resources)
                             {
-                                // make global service policy depend on properties
+                                // make global service policy depend on properties and policy fragments
                                 globalServicePolicy.dependsOn = [
                                     .. globalServicePolicy.dependsOn,
-                                    .. propertyTemplate.resources.Select(r => GetNamedValueResourceId(r))
+                                    .. propertyTemplate?.resources.Select(r => GetNamedValueResourceId(r)),
+                                    .. policyFragmentsTemplate?.resources.Select(r => GetNamedValueResourceId(r)),
                                     ];
                             }
                         }
@@ -287,6 +295,15 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                                         .. new[] { MakeApiVersionSetResourceId(apiVersionSetId), }
                                         ];
                             }
+                            foreach (PolicyTemplateResource policyResource in apiTemplate.resources.Where(r => r.type == MakeType("apis/policies")))
+                            {
+                                // make apis depend on policy fragments
+                                if (policyFragmentsTemplate?.resources?.Length > 0)
+                                    policyResource.dependsOn = [
+                                        .. policyResource.dependsOn,
+                                        .. policyFragmentsTemplate.resources.Select(r => GetNamedValueResourceId(r)),
+                                        ];
+                            }
                         }
 
                         if (productsTemplate != null)
@@ -297,11 +314,15 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                                 // TODO: make products depend on loggers
                             }
 
-                            foreach (var productResource in productsTemplate.resources.Where(r => r.type == MakeType("products/policies")))
+                            foreach (var policyResource in productsTemplate.resources.Where(r => r.type == MakeType("products/policies")))
                             {
-                                // make product policies depend on properties
-                                if (propertyTemplate?.resources?.Length > 0)
-                                    productResource.dependsOn = productResource.dependsOn.Concat(propertyTemplate.resources.Select(r => GetNamedValueResourceId(r)).ToArray()).ToArray();
+                                // make product policies depend on properties and policy fragments
+                                if (propertyTemplate?.resources?.Length > 0 || policyFragmentsTemplate?.resources?.Length > 0)
+                                    policyResource.dependsOn = [
+                                        .. policyResource.dependsOn,
+                                        .. propertyTemplate?.resources?.Select(r => GetNamedValueResourceId(r)),
+                                        .. policyFragmentsTemplate?.resources?.Select(r => GetNamedValueResourceId(r)),
+                                    ];
                             }
                         }
 
@@ -339,13 +360,14 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                             propertyTemplate,
                             apiVersionSetsTemplate,
                             globalServicePolicyTemplate,
+                            policyFragmentsTemplate,
                         };
 
                         templates.AddRange(templateToWrite.Values);
-                        templates.AddRange(new[] {
+                        templates.AddRange([
                             productsTemplate,
                             productAPIsTemplate,
-                        });
+                        ]);
 
                         foreach (var template in templates)
                         {
@@ -454,6 +476,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             => MakeTypedResourceId("namedValues", name);
         private static string MakeProductResourceId(string name)
             => MakeTypedResourceId("products", name);
+        private static string MakePolicyFragmentResourceId(string name)
+            => MakeTypedResourceId("policyfragments", name);
         private static string MakeTypedResourceId(string type, string name)
             => $"[resourceId('{MakeType(type)}', parameters('ApimServiceName'), '{name}')]";
         private static string MakeType(string type)

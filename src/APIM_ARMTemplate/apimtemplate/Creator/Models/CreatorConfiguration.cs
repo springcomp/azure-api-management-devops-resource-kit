@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         public string linkedTemplatesUrlQueryString { get; set; }
         public string baseFileName { get; set; }
         public List<ServiceUrlProperty> serviceUrlParameters { get; set; }
+        public List<PolicyFragment> fragments { get; set; }
     }
 
     public class APIVersionSetConfig : APIVersionSetProperties
@@ -134,5 +135,12 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
     {
         public string apiName { get; set; }
         public string serviceUrl { get; set; }
+    }
+
+    public class PolicyFragment
+    {
+        public string name { get; set; }
+        public string description { get; set; }
+        public string policy { get; set; }
     }
 }
