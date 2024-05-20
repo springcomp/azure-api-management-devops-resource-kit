@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                                 var rawApiName = GetRawApiName(apiName);
                                 var parameter = apiTemplate.parameters.SingleOrDefault(p => p.Key.StartsWith(rawApiName));
                                 if (parameter.Key != null)
-                                    targetTemplate.parameters.Add(parameter.Key, parameter.Value);
+                                    targetTemplate.parameters.AddOrUpdate(parameter.Key, parameter.Value);
 
                                 // make apis depend on properties
                                 if (propertyTemplate?.resources?.Length > 0)
@@ -471,5 +471,16 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
         private static string GetRawApiName(string name)
             => new Regex(";rev=.+").Replace(name, "");
+    }
+
+    internal static class DictionaryExtensions
+    {
+        public static void AddOrUpdate<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+            if (dictionary.ContainsKey(key))
+                dictionary[key] = value;
+            else
+                dictionary.Add(key, value);
+        }
     }
 }
