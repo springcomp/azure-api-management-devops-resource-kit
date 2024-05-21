@@ -270,6 +270,18 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                             { ParameterNames.LinkedTemplatesUrlQueryString, new TemplateParameterProperties(){ type = "string", defaultValue = creatorConfig.linkedTemplatesUrlQueryString } },
                         };
 
+                        if (policyFragmentsTemplate != null && propertyTemplate?.resources?.Length > 0)
+                        {
+                            foreach (var policyFragment in policyFragmentsTemplate.resources)
+                            {
+                                // make policy fragments depend on properties
+                                policyFragment.dependsOn = [
+                                    .. policyFragment.dependsOn,
+                                    .. propertyTemplate?.resources.Select(r => GetNamedValueResourceId(r)),
+                                    ];
+                            }
+                        }
+
                         if (
                             globalServicePolicyTemplate != null &&
                             (propertyTemplate?.resources?.Length > 0 || policyFragmentsTemplate?.resources?.Length > 0)
