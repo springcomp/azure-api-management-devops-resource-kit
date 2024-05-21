@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
                 productAPIs = $@"/{baseFileName}productAPIs.template.json",
                 apiTags = $@"/{baseFileName}apiTags.template.json",
                 parameters = $@"/{baseFileName}parameters.json",
+                fragments = $@"/{baseFileName}fragments.json",
                 linkedMaster = $@"/{baseFileName}master.template.json",
                 apis = "/Apis",
                 splitAPIs = "/SplitAPIs",
@@ -75,6 +76,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
         public string productAPIs { get; set; }
         public string apiTags { get; set; }
         public string parameters { get; set; }
+        public string fragments { get; set; }
         // linked property outputs 1 master template
         public string linkedMaster { get; set; }
         public string apis { get; set; }

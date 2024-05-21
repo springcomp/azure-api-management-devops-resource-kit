@@ -215,7 +215,24 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     if (creatorConfig.linked == true)
                     {
                         // create linked master template
-                        Template masterTemplate = masterTemplateCreator.CreateLinkedMasterTemplate(creatorConfig, globalServicePolicyTemplate, apiVersionSetsTemplate, productsTemplate, productAPIsTemplate, propertyTemplate, loggersTemplate, backendsTemplate, authorizationServersTemplate, tagTemplate, apiInformation, fileNames, creatorConfig.apimServiceName, fileNameGenerator);
+                        Template masterTemplate = masterTemplateCreator.CreateLinkedMasterTemplate(
+                            creatorConfig,
+                            globalServicePolicyTemplate,
+                            apiVersionSetsTemplate,
+                            productsTemplate,
+                            productAPIsTemplate,
+                            propertyTemplate,
+                            policyFragmentsTemplate,
+                            loggersTemplate,
+                            backendsTemplate,
+                            authorizationServersTemplate,
+                            tagTemplate,
+                            apiInformation,
+                            fileNames,
+                            creatorConfig.apimServiceName,
+                            fileNameGenerator
+                            );
+
                         fileWriter.WriteJSONToFile(masterTemplate, String.Concat(creatorConfig.outputLocation, fileNames.linkedMaster));
                     }
                     var templateToWrite = new Dictionary<string, Template>();
@@ -408,6 +425,10 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                         if (propertyTemplate != null)
                         {
                             fileWriter.WriteJSONToFile(propertyTemplate, String.Concat(creatorConfig.outputLocation, fileNames.namedValues));
+                        }
+                        if (policyFragmentsTemplate != null)
+                        {
+                            fileWriter.WriteJSONToFile(policyFragmentsTemplate, String.Concat(creatorConfig.outputLocation, fileNames.fragments));
                         }
                         if (loggersTemplate != null)
                         {
