@@ -281,7 +281,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                                 globalServicePolicy.dependsOn = [
                                     .. globalServicePolicy.dependsOn,
                                     .. propertyTemplate?.resources.Select(r => GetNamedValueResourceId(r)),
-                                    .. policyFragmentsTemplate?.resources.Select(r => GetNamedValueResourceId(r)),
+                                    .. policyFragmentsTemplate?.resources.Select(r => GetPolicyFragmentResourceId(r)),
                                     ];
                             }
                         }
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                                 if (policyFragmentsTemplate?.resources?.Length > 0)
                                     policyResource.dependsOn = [
                                         .. policyResource.dependsOn,
-                                        .. policyFragmentsTemplate.resources.Select(r => GetNamedValueResourceId(r)),
+                                        .. policyFragmentsTemplate.resources.Select(r => GetPolicyFragmentResourceId(r)),
                                         ];
                             }
                         }
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                                     policyResource.dependsOn = [
                                         .. policyResource.dependsOn,
                                         .. propertyTemplate?.resources?.Select(r => GetNamedValueResourceId(r)),
-                                        .. policyFragmentsTemplate?.resources?.Select(r => GetNamedValueResourceId(r)),
+                                        .. policyFragmentsTemplate?.resources?.Select(r => GetPolicyFragmentResourceId(r)),
                                     ];
                             }
                         }
@@ -477,18 +477,23 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             return null;
         }
 
-        private string GetNamedValueResourceId(TemplateResource resource)
+        private string GetTypedResourceId(TemplateResource resource, Func<string, string> makeTypedResourceIdFunc)
         {
             var regex = new Regex(@"\[concat\(parameters\('ApimServiceName'\), '/(?<n>[^']+)'\)\]");
             var match = regex.Match(resource.name);
             if (match.Success)
             {
                 var name = match.Groups["n"].Value;
-                return MakeNamedValueResourceId(name);
+                return makeTypedResourceIdFunc(name);
             }
 
             throw new NotSupportedException();
         }
+        private string GetPolicyFragmentResourceId(TemplateResource resource)
+            => GetTypedResourceId(resource, MakePolicyFragmentResourceId);
+        private string GetNamedValueResourceId(TemplateResource resource)
+            => GetTypedResourceId(resource, MakeNamedValueResourceId);
+
         private string MakeApiResourceId(string name)
             => MakeTypedResourceId("apis", name);
         private string MakeApiVersionSetResourceId(string apiVersionSetId)
