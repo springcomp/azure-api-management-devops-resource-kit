@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
             if (!String.IsNullOrEmpty(api.serviceUrl))
             {
-                apiTemplate.parameters.Add(api.name + "-ServiceUrl", new TemplateParameterProperties() { type = "string", defaultValue = api.serviceUrl });
+                apiTemplate.parameters.Add(MakeServiceUrlParameterName(api), new TemplateParameterProperties() { type = "string", defaultValue = api.serviceUrl });
             }
 
             List<TemplateResource> resources = new List<TemplateResource>();
@@ -139,12 +139,13 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             apiTemplateResource.properties.format = format;
             apiTemplateResource.properties.value = value;
 
+            apiTemplateResource.properties.apiRevision = api.apiRevision;
+            apiTemplateResource.properties.apiRevisionDescription = api.apiRevisionDescription;
+
             // add properties depending on whether the template is the initial, subsequent, or unified 
             if (!isSplit || !isInitial)
             {
                 // add metadata properties for initial and unified templates
-                apiTemplateResource.properties.apiRevision = api.apiRevision;
-                apiTemplateResource.properties.apiRevisionDescription = api.apiRevisionDescription;
                 apiTemplateResource.properties.authenticationSettings = api.authenticationSettings;
                 apiTemplateResource.properties.subscriptionKeyParameterNames = api.subscriptionKeyParameterNames;
                 apiTemplateResource.properties.isCurrent = api.isCurrent;
@@ -366,8 +367,12 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         }
 
         private string MakeServiceUrl(APIConfig api)
-        {
-            return !String.IsNullOrEmpty(api.serviceUrl) ? $"[parameters('{api.name + "-ServiceUrl"}')]" : null;
-        }
+            => !String.IsNullOrEmpty(api.serviceUrl) ? $"[parameters('{MakeServiceUrlParameterName(api)}')]" : null;
+
+        private static string MakeServiceUrlParameterName(APIConfig api)
+            => string.IsNullOrEmpty(api.apiRevision)
+            ? api.name + "-ServiceUrl"
+            : api.name + "-" + api.apiRevision + "-ServiceUrl"
+            ;
     }
 }

@@ -254,7 +254,6 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                                     newResource.Add(r);
                                     templateToWrite[apiFileName].resources = newResource.ToArray();
                                 }
-
                             }
                         }
                         else
@@ -302,9 +301,8 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                         {
                             foreach (APITemplateResource apiResource in apiTemplate.resources.Where(r => r.type == MakeType("apis")))
                             {
-                                var apiName = GetTypedResourceName(apiResource.name);
-                                var rawApiName = GetRawApiName(apiName);
-                                var parameter = apiTemplate.parameters.SingleOrDefault(p => p.Key.StartsWith(rawApiName));
+                                var serviceUrlParameterName = GetServiceUrlParameterName(apiResource);
+                                var parameter = apiTemplate.parameters.SingleOrDefault(p => p.Key.StartsWith(serviceUrlParameterName));
                                 if (parameter.Key != null)
                                     targetTemplate.parameters.AddOrUpdate(parameter.Key, parameter.Value);
 
@@ -531,6 +529,11 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             throw new NotSupportedException();
         }
 
+        private static string GetServiceUrlParameterName(APITemplateResource api)
+            => string.IsNullOrEmpty(api.properties.apiRevision)
+            ? GetRawApiName(GetTypedResourceName(api.name)) + "-ServiceUrl"
+            : GetRawApiName(GetTypedResourceName(api.name)) + "-" + api.properties.apiRevision + "-ServiceUrl"
+            ;
         private static string GetRawApiName(string name)
             => new Regex(";rev=.+").Replace(name, "");
     }
