@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common
         public string alwaysLog { get; set; }
         public string loggerId { get; set; }
         public string httpCorrelationProtocol { get; set; }
+        public bool metrics { get; set; }
         public string verbosity { get; set; }
         public Nullable<bool> logClientIp { get; set; }
 

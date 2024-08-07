@@ -15,10 +15,12 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 properties = new DiagnosticTemplateProperties()
                 {
                     alwaysLog = api.diagnostic.alwaysLog,
-                    sampling = api.diagnostic.sampling,
-                    frontend = api.diagnostic.frontend,
                     backend = api.diagnostic.backend,
-                    enableHttpCorrelationHeaders = api.diagnostic.enableHttpCorrelationHeaders
+                    enableHttpCorrelationHeaders = api.diagnostic.enableHttpCorrelationHeaders,
+                    frontend = api.diagnostic.frontend,
+                    httpCorrelationProtocol = api.diagnostic.httpCorrelationProtocol,
+                    metrics = api.diagnostic.metrics,
+                    sampling = api.diagnostic.sampling,
                 },
                 dependsOn = dependsOn
             };
