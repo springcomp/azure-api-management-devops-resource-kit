@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             {
                 name = $"[concat(parameters('ApimServiceName'), '/{subscription.name}')]",
                 type = "Microsoft.ApiManagement/service/subscriptions",
-                apiVersion = "2019-01-01",
+                apiVersion = GlobalConstants.APIVersion,
                 properties = new SubscriptionsTemplateProperties
                 {
                     ownerId = subscription.ownerId,

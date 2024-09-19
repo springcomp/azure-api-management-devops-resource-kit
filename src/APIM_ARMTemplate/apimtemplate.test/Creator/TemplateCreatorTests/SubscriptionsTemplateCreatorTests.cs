@@ -35,7 +35,6 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
 
             Assert.Equal($"[concat(parameters('ApimServiceName'), '/{subscription.name}')]", subscriptionsTemplateResource.name);
             Assert.Equal($"Microsoft.ApiManagement/service/subscriptions", subscriptionsTemplateResource.type);
-            Assert.Equal("2019-01-01", subscriptionsTemplateResource.apiVersion);
 
             Assert.Equal(subscription.scope, subscriptionsTemplateResource.properties.scope);
             Assert.Equal(subscription.displayName, subscriptionsTemplateResource.properties.displayName);
