@@ -15,11 +15,11 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             // add parameters
             tagTemplate.parameters = new Dictionary<string, TemplateParameterProperties>
             {
-                {ParameterNames.ApimServiceName, new TemplateParameterProperties(){ type = "string" }}
+                [ParameterNames.ApimServiceName] = new TemplateParameterProperties(){ type = "string" },
             };
 
             // aggregate all tags from apis
-            HashSet<string> tagHashset = new HashSet<string>();
+            HashSet<string> tagHashset = [];
             List<APIConfig> apis = creatorConfig.apis;
             if (apis != null)
             {
@@ -29,18 +29,15 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     {
                         string[] apiTags = api.tags.Split(", ");
                         foreach (string apiTag in apiTags)
-                        {
                             tagHashset.Add(apiTag);
-                        }
                     }
                 }
             }
-            foreach (TagTemplateProperties tag in creatorConfig.tags)
-            {
-                tagHashset.Add(tag.displayName);
-            }
 
-            List<TemplateResource> resources = new List<TemplateResource>();
+            foreach (TagTemplateProperties tag in creatorConfig.tags)
+                tagHashset.Add(tag.displayName);
+
+            List<TemplateResource> resources = [];
             foreach (string tag in tagHashset)
             {
                 // create tag resource with properties
@@ -49,16 +46,14 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     name = $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{MakeTagName(tag)}')]",
                     type = ResourceTypeConstants.Tag,
                     apiVersion = GlobalConstants.APIVersion,
-                    properties = new TagTemplateProperties()
-                    {
-                        displayName = tag
-                    },
-                    dependsOn = new string[] { }
+                    properties = new TagTemplateProperties() { displayName = tag, },
+                    dependsOn = [],
                 };
                 resources.Add(tagTemplateResource);
             }
 
-            tagTemplate.resources = resources.ToArray();
+            tagTemplate.resources = [.. resources];
+
             return tagTemplate;
         }
     }

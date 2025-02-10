@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
@@ -8,16 +9,19 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         private PolicyTemplateCreator policyTemplateCreator;
         private ProductGroupTemplateCreator productGroupTemplateCreator;
         private SubscriptionTemplateCreator subscriptionTemplateCreator;
+        private TagResourceTemplateCreator productTagTemplateCreator;
 
         public ProductTemplateCreator(
             PolicyTemplateCreator policyTemplateCreator,
             ProductGroupTemplateCreator productGroupTemplateCreator,
-            SubscriptionTemplateCreator subscriptionTemplateCreator
+            SubscriptionTemplateCreator subscriptionTemplateCreator,
+            TagResourceTemplateCreator productTagTemplateCreator
             )
         {
             this.policyTemplateCreator = policyTemplateCreator;
             this.productGroupTemplateCreator = productGroupTemplateCreator;
             this.subscriptionTemplateCreator = subscriptionTemplateCreator;
+            this.productTagTemplateCreator = productTagTemplateCreator;
         }
 
         public Template CreateProductTemplate(CreatorConfig creatorConfig)
@@ -57,29 +61,23 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 };
                 resources.Add(productsTemplateResource);
 
+                string[] dependsOn = [$"[resourceId('Microsoft.ApiManagement/service/products', parameters('{ParameterNames.ApimServiceName}'), '{product.name}')]"];
+
                 // create product policy resource that depends on the product, if provided
                 if (product.policy != null)
-                {
-                    string[] dependsOn = new string[] { $"[resourceId('Microsoft.ApiManagement/service/products', parameters('{ParameterNames.ApimServiceName}'), '{product.name}')]" };
-                    PolicyTemplateResource productPolicy = this.policyTemplateCreator.CreateProductPolicyTemplateResource(product, dependsOn);
-                    resources.Add(productPolicy);
-                }
+                    resources.Add(this.policyTemplateCreator.CreateProductPolicyTemplateResource(product, dependsOn));
 
                 // create product group resources if provided
                 if (product.groups != null)
-                {
-                    string[] dependsOn = new string[] { $"[resourceId('Microsoft.ApiManagement/service/products', parameters('{ParameterNames.ApimServiceName}'), '{product.name}')]" };
-                    List<ProductGroupsValue> productGroups = this.productGroupTemplateCreator.CreateProductGroupTemplateResources(product, dependsOn);
-                    resources.AddRange(productGroups);
-                }
+                    resources.AddRange(this.productGroupTemplateCreator.CreateProductGroupTemplateResources(product, dependsOn));
 
                 // create product subscriptions if provided
                 if (product.subscriptions != null)
-                { 
-                    string[] dependsOn = new string[] { $"[resourceId('Microsoft.ApiManagement/service/products', parameters('{ParameterNames.ApimServiceName}'), '{product.name}')]" };
-                    List<SubscriptionsTemplateResource> subscriptions = this.subscriptionTemplateCreator.CreateSubscriptionsTemplateResources(product, dependsOn);
-                    resources.AddRange(subscriptions);
-                }
+                    resources.AddRange(this.subscriptionTemplateCreator.CreateSubscriptionsTemplateResources(product, dependsOn));
+
+                // create product tags if provided
+                if (!string.IsNullOrWhiteSpace(product.tags))
+                    resources.AddRange(this.productTagTemplateCreator.CreateTagProductTemplateResources(product, dependsOn));
             }
 
             productTemplate.resources = resources.ToArray();

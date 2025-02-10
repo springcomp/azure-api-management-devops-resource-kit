@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
             GraphQLSchemaTemplateCreator graphQLSchemaTemplateCreator = new GraphQLSchemaTemplateCreator(fileReader);
             DiagnosticTemplateCreator diagnosticTemplateCreator = new DiagnosticTemplateCreator();
             ReleaseTemplateCreator releaseTemplateCreator = new ReleaseTemplateCreator();
-            TagAPITemplateCreator tagAPITemplateCreator = new TagAPITemplateCreator();
+            TagResourceTemplateCreator tagAPITemplateCreator = new TagResourceTemplateCreator();
             APITemplateCreator apiTemplateCreator = new APITemplateCreator(
                 fileReader,
                 policyTemplateCreator,

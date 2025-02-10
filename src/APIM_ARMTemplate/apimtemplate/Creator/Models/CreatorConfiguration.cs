@@ -116,9 +116,11 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
     {
         // policy file location (local or url)
         public string policy { get; set; }
-        // coma separated names
+        // comma separated names
         public string groups { get; set; }
         public List<SubscriptionConfig> subscriptions { get; set; }
+        // comma separated list of tags
+        public string tags { get; set; } = "";
     }
 
     public class PropertyConfig : PropertyResourceProperties

@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     BackendTemplateCreator backendTemplateCreator = new BackendTemplateCreator();
                     AuthorizationServerTemplateCreator authorizationServerTemplateCreator = new AuthorizationServerTemplateCreator();
                     ProductAPITemplateCreator productAPITemplateCreator = new ProductAPITemplateCreator();
-                    TagAPITemplateCreator tagAPITemplateCreator = new TagAPITemplateCreator();
+                    TagResourceTemplateCreator tagResourceTemplateCreator = new();
                     PolicyFragmentsTemplateCreator policyFragmentsTemplateCreator = new PolicyFragmentsTemplateCreator(fileReader);
                     PolicyTemplateCreator policyTemplateCreator = new PolicyTemplateCreator(fileReader);
                     ProductGroupTemplateCreator productGroupTemplateCreator = new ProductGroupTemplateCreator();
@@ -113,14 +113,19 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     GraphQLSchemaTemplateCreator graphQLSchemaTemplateCreator = new GraphQLSchemaTemplateCreator(fileReader);
                     DiagnosticTemplateCreator diagnosticTemplateCreator = new DiagnosticTemplateCreator();
                     ReleaseTemplateCreator releaseTemplateCreator = new ReleaseTemplateCreator();
-                    ProductTemplateCreator productTemplateCreator = new ProductTemplateCreator(policyTemplateCreator, productGroupTemplateCreator, productSubscriptionsTemplateCreator);
+                    ProductTemplateCreator productTemplateCreator = new(
+                        policyTemplateCreator,
+                        productGroupTemplateCreator,
+                        productSubscriptionsTemplateCreator,
+                        tagResourceTemplateCreator
+                        );
                     PropertyTemplateCreator propertyTemplateCreator = new PropertyTemplateCreator();
                     TagTemplateCreator tagTemplateCreator = new TagTemplateCreator();
                     APITemplateCreator apiTemplateCreator = new APITemplateCreator(
                         fileReader,
                         policyTemplateCreator,
                         productAPITemplateCreator,
-                        tagAPITemplateCreator,
+                        tagResourceTemplateCreator,
                         graphQLSchemaTemplateCreator,
                         diagnosticTemplateCreator,
                         releaseTemplateCreator);
@@ -206,6 +211,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                     Console.WriteLine("Creating tag template");
                     Console.WriteLine("------------------------------------------");
                     Template tagTemplate = creatorConfig.tags != null ? tagTemplateCreator.CreateTagTemplate(creatorConfig) : null;
+
 
                     // create parameters file parameters to outputLocation
                     Template templateParameters = masterTemplateCreator.CreateMasterTemplateParameterValues(creatorConfig);

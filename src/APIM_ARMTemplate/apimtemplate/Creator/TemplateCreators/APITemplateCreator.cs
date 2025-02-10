@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         private FileReader fileReader;
         private PolicyTemplateCreator policyTemplateCreator;
         private ProductAPITemplateCreator productAPITemplateCreator;
-        private TagAPITemplateCreator tagAPITemplateCreator;
+        private TagResourceTemplateCreator tagAPITemplateCreator;
         private GraphQLSchemaTemplateCreator graphQLSchemaTemplateCreator;
         private DiagnosticTemplateCreator diagnosticTemplateCreator;
         private ReleaseTemplateCreator releaseTemplateCreator;
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             FileReader fileReader,
             PolicyTemplateCreator policyTemplateCreator,
             ProductAPITemplateCreator productAPITemplateCreator,
-            TagAPITemplateCreator tagAPITemplateCreator,
+            TagResourceTemplateCreator tagAPITemplateCreator,
             GraphQLSchemaTemplateCreator graphQLSchemaTemplateCreator,
             DiagnosticTemplateCreator diagnosticTemplateCreator,
             ReleaseTemplateCreator releaseTemplateCreator)
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             PolicyTemplateResource apiPolicyResource = api.policy != null ? this.policyTemplateCreator.CreateAPIPolicyTemplateResource(api, dependsOn) : null;
             List<PolicyTemplateResource> operationPolicyResources = api.operations != null ? this.policyTemplateCreator.CreateOperationPolicyTemplateResources(api, dependsOn) : null;
             List<ProductAPITemplateResource> productAPIResources = api.products != null ? this.productAPITemplateCreator.CreateProductAPITemplateResources(api, dependsOn) : null;
-            List<TagAPITemplateResource> tagAPIResources = api.tags != null ? this.tagAPITemplateCreator.CreateTagAPITemplateResources(api, dependsOn) : null;
+            List<TagTemplateResource> tagAPIResources = api.tags != null ? this.tagAPITemplateCreator.CreateTagAPITemplateResources(api, dependsOn) : null;
             GraphQLSchemaTemplateResource schemaTemplateResource = !String.IsNullOrWhiteSpace(api.graphQLSchema) ? this.graphQLSchemaTemplateCreator.CreateGraphQLSchemaTemplateResource(api, dependsOn) : null;
             DiagnosticTemplateResource diagnosticTemplateResource = api.diagnostic != null ? this.diagnosticTemplateCreator.CreateAPIDiagnosticTemplateResource(api, dependsOn) : null;
             // add release resource if the name has been appended with ;rev{revisionNumber}
@@ -310,9 +310,10 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         }
 
         public static string MakeResourceName(APIConfig api)
-        {
-            return $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{MakeApiResourceName(api)}')]";
-        }
+            => MakeResourceName(MakeApiResourceName(api));
+
+        public static string MakeResourceName(string name)
+            =>$"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{name}')]";
 
         public static string MakeApiResourceName(APIConfig api)
         {
@@ -321,11 +322,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         }
 
         public static string SanitizeApiSuffix(string path)
-        {
-            if (path?.StartsWith("/") == true)
-                return path.Substring(1);
-            return path;
-        }
+           => path?.StartsWith('/') == true ? path[1..] : path;
 
         public string[] CreateProtocols(APIConfig api)
         {
