@@ -4,13 +4,14 @@ using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
 {
     public class APITemplateCreatorTests
     {
         [Fact]
-        public async void ShouldCreateInitialAPITemplateResourceFromCreatorConfig()
+        public async Task ShouldCreateInitialAPITemplateResourceFromCreatorConfig()
         {
             // arrange
             APITemplateCreator apiTemplateCreator = APITemplateCreatorFactory.GenerateAPITemplateCreator();
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
         }
 
         [Fact]
-        public async void ShouldCreateSubsequentlAPITemplateResourceFromCreatorConfigWithCorrectContent()
+        public async Task ShouldCreateSubsequentlAPITemplateResourceFromCreatorConfigWithCorrectContent()
         {
             // arrange
             APITemplateCreator apiTemplateCreator = APITemplateCreatorFactory.GenerateAPITemplateCreator();
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
 
 
         [Fact]
-        public async void ShouldCreateUnifiedAPITemplateResourceFromCreatorConfig()
+        public async Task ShouldCreateUnifiedAPITemplateResourceFromCreatorConfig()
         {
             // arrange
             APITemplateCreator apiTemplateCreator = APITemplateCreatorFactory.GenerateAPITemplateCreator();
@@ -159,7 +160,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
         }
 
         [Fact]
-        public async void ShouldAppendRevisionToAPIName()
+        public async Task ShouldAppendRevisionToAPIName()
         {
             // arrange
             APITemplateCreator apiTemplateCreator = APITemplateCreatorFactory.GenerateAPITemplateCreator();

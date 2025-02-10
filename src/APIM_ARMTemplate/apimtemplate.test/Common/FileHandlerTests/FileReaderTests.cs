@@ -3,13 +3,14 @@ using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 using System;
 using System.IO;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
 {
     public class FileReaderTests
     {
         [Fact]
-        public async void ShouldConvertYAMLConfigToCreatorConfiguration()
+        public async Task ShouldConvertYAMLConfigToCreatorConfiguration()
         {
             // arrange
             FileReader fileReader = new FileReader();
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
         }
 
         [Fact]
-        public async void ShouldRetrieveFileContentsWithoutError()
+        public async Task ShouldRetrieveFileContentsWithoutError()
         {
             // arrange
             FileReader fileReader = new FileReader();

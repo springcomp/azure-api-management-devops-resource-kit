@@ -3,6 +3,7 @@ using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Common;
 using System;
 using System.IO;
 using Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
 {
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Test
                    "OpenAPISpecs", Path.DirectorySeparatorChar);
         }
         [Fact]
-        public async void ShouldDetermineCorrectOpenAPISpecVersion()
+        public async Task ShouldDetermineCorrectOpenAPISpecVersion()
         {
             // arrange
             OpenAPISpecReader openAPISpecReader = new OpenAPISpecReader();
