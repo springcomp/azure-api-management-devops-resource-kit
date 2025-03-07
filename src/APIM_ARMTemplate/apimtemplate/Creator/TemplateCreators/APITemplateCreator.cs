@@ -130,9 +130,13 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             apiTemplateResource.properties.type = api.type;
             apiTemplateResource.properties.apiType = api.type;
             apiTemplateResource.properties.description = api.description;
+            apiTemplateResource.properties.displayName = string.IsNullOrEmpty(api.displayName) ? api.name : api.displayName;
+
+            if (api.isCurrent != null)
+                apiTemplateResource.properties.isCurrent = api.isCurrent;
+
             apiTemplateResource.properties.subscriptionRequired = api.subscriptionRequired;
             apiTemplateResource.properties.path = SanitizeApiSuffix(api.suffix);
-            apiTemplateResource.properties.displayName = string.IsNullOrEmpty(api.displayName) ? api.name : api.displayName;
 
             var (format, value) = await GetApiFormat(api);
 
