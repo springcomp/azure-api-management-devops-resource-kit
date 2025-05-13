@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -7,24 +6,21 @@
     <LangVersion>preview</LangVersion>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>apim-templates</ToolCommandName>
-    <Version>1.0.33</Version>
+    <Version>1.0.34</Version>
     <PackageProjectUrl>https://github.com/springcomp/azure-api-management-devops-resource-kit/tree/1.0.32</PackageProjectUrl>
     <PackageId>apim-templates</PackageId>
     <RepositoryType>GitHub</RepositoryType>
     <PackageTags>apim</PackageTags>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="Extractor\TemplateCreators\**" />
     <EmbeddedResource Remove="Extractor\TemplateCreators\**" />
     <None Remove="Extractor\TemplateCreators\**" />
   </ItemGroup>
-
   <ItemGroup>
     <None Remove="microsoft.gpg" />
     <None Remove="packages-microsoft-prod.deb" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Colors.Net" Version="1.1.0" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
@@ -34,5 +30,4 @@
     <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
-
 </Project>
