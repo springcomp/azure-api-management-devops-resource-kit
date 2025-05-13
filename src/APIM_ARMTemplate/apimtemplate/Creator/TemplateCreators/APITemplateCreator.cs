@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
         {
             List<TemplateResource> resources = new List<TemplateResource>();
             // all child resources will depend on the api
-            string[] dependsOn = new string[] { $"[resourceId('Microsoft.ApiManagement/service/apis', parameters('{ParameterNames.ApimServiceName}'), '{MakeApiResourceName(api)}')]" };
+            string[] dependsOn = [$"[resourceId('Microsoft.ApiManagement/service/apis', parameters('{ParameterNames.ApimServiceName}'), '{MakeApiResourceName(api)}')]"];
 
             PolicyTemplateResource apiPolicyResource = api.policy != null ? this.policyTemplateCreator.CreateAPIPolicyTemplateResource(api, dependsOn) : null;
             List<PolicyTemplateResource> operationPolicyResources = api.operations != null ? this.policyTemplateCreator.CreateOperationPolicyTemplateResources(api, dependsOn) : null;

@@ -25,9 +25,10 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             // create a tag/apis association resource for each tag in the config file
             List<TagTemplateResource> tagAPITemplates = [];
             // tags is comma seperated list of tags
-            foreach(string tagID in tagIDs) 
+            foreach (string tagID in tagIDs)
             {
-                TagTemplateResource tagAPITemplate = this.CreateTagResourceTemplateResource(tagID, resourceType, resourceName, dependsOn);
+                string[] dependsOnTag = [.. dependsOn, $"[resourceId('Microsoft.ApiManagement/service/tags', parameters('{ParameterNames.ApimServiceName}'), '{MakeTagName(tagID)}')]"];
+                TagTemplateResource tagAPITemplate = this.CreateTagResourceTemplateResource(tagID, resourceType, resourceName, dependsOnTag);
                 tagAPITemplates.Add(tagAPITemplate);
             }
             return tagAPITemplates;
@@ -35,11 +36,12 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
         public TagTemplateResource CreateTagResourceTemplateResource(string tagName, string resourceType, string resourceName, string[] dependsOn)
             // create tags/apis resource with properties
-            => new(){
+            => new()
+            {
                 name = $"[concat(parameters('{ParameterNames.ApimServiceName}'), '/{resourceName}/{MakeTagName(tagName)}')]",
                 type = resourceType,
                 apiVersion = GlobalConstants.APIVersion,
-                properties = new TagTemplateProperties(){ displayName = tagName, },
+                properties = new TagTemplateProperties() { displayName = tagName, },
                 dependsOn = dependsOn,
             };
     }
