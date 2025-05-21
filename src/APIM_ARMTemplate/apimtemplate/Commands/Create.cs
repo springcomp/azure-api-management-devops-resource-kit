@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
 
                     Console.WriteLine("Creating tag template");
                     Console.WriteLine("------------------------------------------");
-                    Template tagTemplate = creatorConfig.tags != null ? tagTemplateCreator.CreateTagTemplate(creatorConfig) : null;
+                    Template tagTemplate = tagTemplateCreator.CreateTagTemplate(creatorConfig);
 
 
                     // create parameters file parameters to outputLocation

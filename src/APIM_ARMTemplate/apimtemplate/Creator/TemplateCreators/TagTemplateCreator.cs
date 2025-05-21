@@ -15,26 +15,23 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
             // add parameters
             tagTemplate.parameters = new Dictionary<string, TemplateParameterProperties>
             {
-                [ParameterNames.ApimServiceName] = new TemplateParameterProperties(){ type = "string" },
+                [ParameterNames.ApimServiceName] = new TemplateParameterProperties() { type = "string" },
             };
 
             // aggregate all tags from apis
             HashSet<string> tagHashset = [];
             List<APIConfig> apis = creatorConfig.apis;
-            if (apis != null)
+            foreach (APIConfig api in apis ?? [])
             {
-                foreach (APIConfig api in apis)
+                if (api.tags != null)
                 {
-                    if (api.tags != null)
-                    {
-                        string[] apiTags = api.tags.Split(", ");
-                        foreach (string apiTag in apiTags)
-                            tagHashset.Add(apiTag);
-                    }
+                    string[] apiTags = api.tags.Split(", ");
+                    foreach (string apiTag in apiTags)
+                        tagHashset.Add(apiTag);
                 }
             }
 
-            foreach (TagTemplateProperties tag in creatorConfig.tags)
+            foreach (TagTemplateProperties tag in creatorConfig.tags ?? [])
                 tagHashset.Add(tag.displayName);
 
             List<TemplateResource> resources = [];
