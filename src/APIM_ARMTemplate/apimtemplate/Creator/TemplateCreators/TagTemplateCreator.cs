@@ -18,16 +18,32 @@ namespace Microsoft.Azure.Management.ApiManagement.ArmTemplates.Create
                 [ParameterNames.ApimServiceName] = new TemplateParameterProperties() { type = "string" },
             };
 
-            // aggregate all tags from apis
+            // aggregate all tags from apis and products
             HashSet<string> tagHashset = [];
-            List<APIConfig> apis = creatorConfig.apis;
-            foreach (APIConfig api in apis ?? [])
+
+            List<APIConfig> apis = creatorConfig.apis ?? [];
+            foreach (APIConfig api in apis)
             {
                 if (api.tags != null)
                 {
                     string[] apiTags = api.tags.Split(", ");
                     foreach (string apiTag in apiTags)
-                        tagHashset.Add(apiTag);
+                    {
+                        _ = tagHashset.Add(apiTag);
+                    }
+                }
+            }
+
+            List<ProductConfig> products = creatorConfig.products ?? [];
+            foreach (ProductConfig product in products)
+            {
+                if (product.tags != null)
+                {
+                    string[] productTags = product.tags.Split(", ");
+                    foreach (string productTag in productTags)
+                    {
+                        _ = tagHashset.Add(productTag);
+                    }
                 }
             }
 
